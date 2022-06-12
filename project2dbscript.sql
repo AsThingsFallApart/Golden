@@ -158,7 +158,6 @@ insert into racewinners values ('Liege-Bastogne-Liege', 1972, 'Eddy Merckx', 273
 
 
 
-
 # uncomment the following 4 lines if you want to see the results of creating and populating the database
 select * from riders;
 select * from teams;
