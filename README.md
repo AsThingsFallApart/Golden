@@ -1,10 +1,10 @@
-# mySQL-jConnector
+# Golden
 Query a mySQL database using a Java GUI
 
 INSTALLING NECESSARY DEPENDENCIES:
 --------------------------------------------------
 
-Repository 'mySQL-jConnector' depends on 'Connector/J' by Oracle MySQL Project Engineering Team.
+Golden depends on 'Connector/J' by Oracle MySQL Project Engineering Team.
 
 The Connector/J .jar file can be downloaded at https://dev.mysql.com/downloads/connector/j/.
 
