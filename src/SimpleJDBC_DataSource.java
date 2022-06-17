@@ -1,3 +1,12 @@
+/*
+ *  Name: Gregory Flynn
+ *  Course: CNT 4714 Summer 2022
+ *  Assignment title: Project 2 - A Two-tier Client-Server Application
+ *  Date: June 26, 2022
+ * 
+ *  Class: SimpleJDBC_PropertiesFile.java
+ */
+
 // Very basic JDBC example showing loading of JDBC driver, establishing connection
 // creating a statement, executing a simple SQL query, and displaying the results.
 // This version uses the implicit driver loading using a MySQLDataSource object

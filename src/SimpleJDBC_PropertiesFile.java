@@ -1,3 +1,12 @@
+/*
+ *  Name: Gregory Flynn
+ *  Course: CNT 4714 Summer 2022
+ *  Assignment title: Project 2 - A Two-tier Client-Server Application
+ *  Date: June 26, 2022
+ * 
+ *  Class: SimpleJDBC_PropertiesFile.java
+ */
+
 // Very basic JDBC example showing:
 //  1. loading of JDBC driver
 //  2. establishing connection
@@ -71,7 +80,7 @@ public class SimpleJDBC_PropertiesFile {
      * the database.
      */
 
-    System.out.println("Output from SimpleJDBC_PropertiesFile:   Using a properties file to hold connection details.");
+    System.out.println("Output from SimpleJDBC_PropertiesFile: Using a properties file to hold connection details.");
 	  java.util.Date date = new java.util.Date();
 	  System.out.println(date);
     System.out.println(); 
@@ -109,7 +118,7 @@ public class SimpleJDBC_PropertiesFile {
         resultSet.getString("cost") + "         \t" + resultSet.getString("mileage"));
 
 		//the following print statement works exactly the same  
-      //System.out.println(resultSet.getString(1) + "         \t" +
+      //System.out.println(resultSet.getString(1) + "   connection      \t" +
       //  resultSet.getString(2) + "         \t" + resultSet.getString(3));
     System.out.println();
     System.out.println();

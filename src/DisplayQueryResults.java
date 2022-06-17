@@ -1,4 +1,4 @@
-// Display the results of queries against the bikes table in the bikedb database.
+// DISPLAY the results of in the bikedb database.
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionListener;
@@ -23,21 +23,23 @@ public class DisplayQueryResults extends JFrame
    
    private ResultSetTableModel tableModel;
    private JTextArea queryArea;
+
+   // TODO: scale text UP so it's readable on a machine running Linux
    
+   /* CONSTRUCTOR */
    // create ResultSetTableModel and GUI
    public DisplayQueryResults() 
    {   
       super( "Displaying Query Results" );
         
       // create ResultSetTableModel and display database table
-      try 
-      {
+      try {
          // create TableModel for results of query SELECT * FROM bikes
          tableModel = new ResultSetTableModel( DEFAULT_QUERY );
 
          // set up JTextArea in which user types queries
-		//	queryArea = new JTextArea( 3, 100);
-         queryArea = new JTextArea( DEFAULT_QUERY, 3, 100 );
+		   //	queryArea = new JTextArea( 3, 100);
+         queryArea = new JTextArea( DEFAULT_QUERY, 3, 100);
          queryArea.setWrapStyleWord( true );
          queryArea.setLineWrap( true );
          
