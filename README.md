@@ -1,5 +1,5 @@
 # Golden
-Query a mySQL database using a Java GUI
+Query a MySQL database using a Java GUI
 
 INSTALLING NECESSARY DEPENDENCIES:
 --------------------------------------------------
