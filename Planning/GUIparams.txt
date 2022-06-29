@@ -1,0 +1,90 @@
+width x height
+
+desired2QueryArea:
+708x199 px
+	area: 140892 px
+	ratioOfWindow: 0.106748170630994 %
+
+desired2WindowSize:
+1478x893 px
+	area: 1319854 px
+
+linuxWindowSize:
+2510x1826 px
+	area: 4583260 px
+
+linuxQueryArea:
+	- should be 10.67% of window...
+	- area: 489034 px
+	- width is 3.527 times longer than height
+		-- areaRectangle = (length)(width)
+		-- area = (x)(3.527x)
+			489034 = 3.527x^2
+			138654.380493337113694 = x^2
+			372.363237301075566 = x
+
+		- height:	373 px
+		- width:	1316 px
+
+tempWindowBounds:
+	width: 1200
+	height: 600
+	
+	queryArea:
+		width: 522 px
+		height: 148 px
+
+
+queryInputArea:
+	alignment: {
+		x-offset: -80,
+		y-offset: 170,
+		distribution: ["right edge", "top edge"],
+		container: "JFrame"
+	}
+
+propertiesDropDownList:
+	componentChoices:
+		1.	JComboBox
+			- how:
+			- "JComboBox propDropDownList = new JComboBox(Vector);"
+				-- the Vector object supplied is a collection of files ending in
+				".properties" (all files that follow pattern "*.properties").
+				-- how to populate a vector with all files in a directory that end
+				with ".properties":
+				-- it would be best to define a new static function:
+					--- "public static Vector organizePropFiles() {}"
+						---- pseudo:
+						---- 1. Get path to current directory
+						---- 2. Filter all files that end in ".properties"
+						---- 3. Put all these files in a vector
+						---- 4. return vector
+		2.	JFileChooser
+			- A JFileChooser component is most likely the way to go since it can be
+			configured to open up to any directory
+				-- "String userDirLocation = System.getProperty("user.dir");"
+				-- "File userDir = new File( userDirLocation );"
+				-- "JFileChooser fileNav = new JFileChooser( userDir );"
+				-- "fileNav.setFileFilter( new PropertiesFilter() );
+				-- "fileNav.setVisible( true );"
+				-- "File propFile = fileNav.getSelectedFile();"
+					--- code to:
+						1. instantiate a string that represents the file path
+						2. instantiate a file object that points to file path
+						3. instantiate a JFileChooser object that opens to file
+						4. instantiate a MyFilter object to filter certain files
+						5. set visibility property of JFileChooser to true
+						6. get a properties file from the JFileChooser
+
+				-- 'PropertiesFilter' is a class that extends the "FileFilter" class
+					-- which means I will write it :)
+					-- As of Java 8, FileFilter is an interface
+						--- therefore, if PropertiesFilter implements FileFilter,						it will need to define all the interface's methods.
+							---- "public boolean accept( File f ){}"
+
+
+			- It can be also configured to FILTER the types of files to choose
+				-- how: using a 'FileFilter' object
+				-- filter for all files with the pattern "*.properties"
+			- ok never mind :(. I think I have to use JComboBox since the example doesn't
+			open up a file navigator.
