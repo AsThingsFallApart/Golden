@@ -11,10 +11,12 @@ import javax.swing.Box;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
+import javax.swing.JButton;
 import java.awt.BorderLayout;
 import java.awt.Color;
 
-// [FRONT END] [DRIVER]
+// classTags: [FRONT END] [DRIVER] [CLIENT-SERVER]
+
 // Create a 'DatabaseConnectClient' object that
 //  1. graphically displays all pertinent information
 //  2. provides buttons for executing actions
@@ -31,7 +33,7 @@ public class DatabaseConnectClient extends JFrame {
   public DatabaseConnectClient() {
     
     // evoke JFrame constructor and provide string.
-    // parameter string represents title of application window.
+    //  the constructor parameter string represents title of application.
     super("SQL Client App Version 1 - (GDF - CNT 4714 - Summer 2022 - Project 2)");
     
     /* initialize GUI components */
@@ -42,8 +44,12 @@ public class DatabaseConnectClient extends JFrame {
     //    handled in the 'SQLException' catch block
     try {
 
-      /* instantiate a 'JTextArea' object */
-      queryArea = new JTextArea(3, 100);
+      /* INSTANTIATE A 'JTextArea' OBJECT */
+      //  the purpose of the JTextArea is to allow the user to pass MySQL queries to the client
+      //  when connected to the database, the client then passes the query to the database
+      //    This is the "two-tier" behavior!
+      queryArea = new JTextArea();
+      queryArea.setBounds(10, 10, 500, 500);
       
       // set text wrapping property.
       // passing 'true' as a parameter has text wrap at word boundary
@@ -55,17 +61,23 @@ public class DatabaseConnectClient extends JFrame {
       // 'false' paramter has lines never wrap
       queryArea.setLineWrap(true);
 
-      // create 'Box' object to manage placement of graphical components
-      Box box = Box.createHorizontalBox();
+      /* INSTANTIATE 'JButton' OBJECTS */
+      // the purpose of the JButton object is 
+      //  1. submitting queries
+      //  2. clearing a JTextArea object
+      //  3. connecting to database
+      //  4. clearing a "result window"
+      JButton clearQueryResults = new JButton("Clear Result Window");
+      clearQueryResults.setBackground(Color.YELLOW);
       
-      // // place JTextArea object inside of Box object
-      // box.add(queryArea);
-
-      // instantiate a 'Color' object
-      // parameters are (r, g, b) values
+      /* INSTANTIATE A 'Color' OBJECT */
+      // the purpose of a Color object is to specify background color of client
+      // parameters of the Color object are (r, g, b) values
       Color verylightGrey = new Color(238, 238, 238);
 
-      // change background color of window
+      // change background color of JFrame with methods
+      // '.getContentPane()' from the 'JFrame' class and
+      // '.setBackground(Color)' from the 'Component' class. 
       //    JFrame methods can be called statically since this class
       //    EXTENDS the JFrame class.
       //      in other words, the JVM knows JFrame methods are in reference
@@ -73,13 +85,32 @@ public class DatabaseConnectClient extends JFrame {
       //      and the class IS A JFrame object.
       getContentPane().setBackground(verylightGrey);
 
-      // place GUI components on content pane
-      add(queryArea, BorderLayout.NORTH);
+      /* INSTANTIATE 'Box' OBJECTS */
+      // the purpose of Box objects is to organize GUI elements
+      Box topBox = Box.createHorizontalBox();
+      Box botBox = Box.createHorizontalBox();
 
-      // set dimensions of JFrame window
-      setSize(800, 400);
+      // add 'queryArea' to 'topBox' container
+      topBox.add(queryArea);
 
-      // have the JFrame object create a window
+      // add 'clearQueryResults' button to 'botBox' container
+      botBox.add(clearQueryResults);
+
+      // add Box objects to JFrame.
+      //  component alignment in the JFrame is realized through 
+      //  BorderLayout objects passed as parameters.
+      add(topBox, BorderLayout.NORTH);
+      add(botBox, BorderLayout.SOUTH);
+
+      // set dimensions of JFrame
+      setSize(1200, 600);
+
+      // suppress automatic layout
+      //  causes no components to load!
+      //    in other words, invalidates component hierarchy
+      // setLayout(null);
+
+      // have the JFrame object create a seperate process
       setVisible(true);
     }
     // catch(ClassNotFoundException classNotFound) {
@@ -94,7 +125,7 @@ public class DatabaseConnectClient extends JFrame {
     //   System.exit(1);
     // }
     finally {
-      // DISPOSE of window when user quits application.
+      // DISPOSE of JFrame when user clicks exits out of process
       // this is alternative to the default behavior of HIDING on close
       setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     }
