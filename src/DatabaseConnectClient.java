@@ -45,9 +45,10 @@ import java.awt.Dimension;
 public class DatabaseConnectClient extends JFrame {
 
   /* class variables */
-  static final String DEFAULT_QUERY = "SELECT * FROM racewinners";
+  static final String DEFAULT_QUERY = "SELECT * FROM bikes";
   private ResultSetTableModel tableModel;
   private JTable queryResultTable;
+  private JTextArea queryArea;
   
   /* CONSTRUCTOR */
   public DatabaseConnectClient() {
@@ -89,40 +90,39 @@ public class DatabaseConnectClient extends JFrame {
     //      and the class IS A JFrame object.
     getContentPane().setBackground( verylightGrey );
 
+    /* 
+     * INSTANTIATE TOP-RIGHT OF JFRAME CONTENT PANE 
+     *  The purpose of the top-right components is to input, clear, and execute
+     *  SQL commands.
+     *  includedComponenets
+     *    1. 'clearSQLCommand'    (JButton) 
+     *    2. 'executesSQLCommand' (JButton)
+     *    3. 'queryAreaLabel'     (JLabel)
+     *    4. 'queryArea'          (JTextArea)
+     */
+
     /* INITIALIZE 'JButton' COMPONENTS */
     JButton clearSQLCommand = new JButton( "Clear SQL Command" );
     clearSQLCommand.setBackground( Color.WHITE );
     clearSQLCommand.setForeground( Color.RED );
-
+    
     JButton executeSQLCommand = new JButton( "Execute SQL Command" );
     executeSQLCommand.setBackground( limeGreen );
-
+    
     // Layout buttons left to right using a BoxLayout manager
     //  buttonBox organizes its components from left to right ("LINE_AXIS").
     Box buttonBox = new Box( BoxLayout.LINE_AXIS );
-
+    
     // Components are organized in the order they are added:
     //  Adding 'clearSQLCommand' first ensures it is on the left.
-
     buttonBox.add( clearSQLCommand );
     buttonBox.add( executeSQLCommand );
-
-    /* INSTANTIATE TOP-RIGHT OF JFRAME CONTENT PANE 
-      *  The purpose of the top-right components is to input, clear, and execute
-      *  SQL commands.
-      *  includedComponenets
-      *    1. 'clearSQLCommand'    (JButton) 
-      *    2. 'executesSQLCommand' (JButton)
-      *    3. 'queryAreaLabel'     (JLabel)
-      *    4. 'queryArea'          (JTextArea)
-      */
-    JLabel queryAreaLabel = new JLabel( "Enter An SQL Command" );
 
     /* INSTANTIATE A 'JTextArea' OBJECT */
     //  the purpose of the JTextArea is to allow the user to pass MySQL queries to the client
     //  when connected to the database, the client then passes the query to the database (server).
     //    This is the "two-tier" behavior!
-    JTextArea queryArea = new JTextArea();
+    queryArea = new JTextArea( DEFAULT_QUERY );
 
     // set text wrapping property.
     // passing 'true' as a parameter has text wrap at word boundary
@@ -133,6 +133,8 @@ public class DatabaseConnectClient extends JFrame {
     // 'true' paramater has lines wrap if they exceed JTextArea width
     // 'false' paramter has lines never wrap
     // queryArea.setLineWrap( true );
+
+    JLabel queryAreaLabel = new JLabel( "Enter An SQL Command" );
 
     // align all SQL Command Area components in 'topRightBox'
     //  topRightBox componenets are aligned from top to bottom
@@ -154,7 +156,7 @@ public class DatabaseConnectClient extends JFrame {
       *    7. 'passwordField'              (JPasswordField)
       *    8. 'connectToDatabaseButton'    (JButton)
       */
-
+      
     JLabel connectionDetailsLabel = new JLabel( "Connection Details" );
     
     JTextPane propertiesFilePane = new JTextPane();
@@ -220,9 +222,9 @@ public class DatabaseConnectClient extends JFrame {
      *    3. 'queryResultTable'             (JScrollPane/JTable/ResultSetTableModel)
      *    4. 'clearResultButton'            (JButton)
      */
-
+    
     JTextPane connectionStatusPane = new JTextPane();
-
+    
     JLabel SQLExecutionResultLabel = new JLabel( "SQL Execution Result Window" );
 
     /* INSTANTIATE A 'JTable' OBJECT */
@@ -230,7 +232,6 @@ public class DatabaseConnectClient extends JFrame {
     //  specifies some errors that might be thrown.
     try {
       tableModel = new ResultSetTableModel( DEFAULT_QUERY );
-
       queryResultTable = new JTable(tableModel);
     }
     catch( ClassNotFoundException classNotFound) {
@@ -266,7 +267,53 @@ public class DatabaseConnectClient extends JFrame {
     //  to take up as much space as the window is given.
     add( northBox, BorderLayout.NORTH );
     add( southBox, BorderLayout.SOUTH );
-    
+
+    /*
+    * ADD 'executeSQLCommand' BUTTON FUNCTIONALITY:
+    *  1. Get text from JTextArea (ideally correct SQL syntax)
+    *  2. use the '.setQuery' method from the 'ResultSetTableModel' class
+    *     to execute query
+    *  3. Update JTable
+    */
+    executeSQLCommand.addActionListener(
+      new ActionListener() {
+        // this ActionListener's 'actionPerformed' method
+        // is defined as passing a query to the ResultSetTableModel.
+        public void actionPerformed( ActionEvent buttonPressed ) {
+
+          System.out.println( "button pressed!" );
+          System.out.println( "queryText: " + queryArea.getText());
+          // try to execute the user's query
+          try {
+            System.out.println( "trying to execute query..." );
+            tableModel.setQuery( queryArea.getText() );
+          }
+          catch( SQLException sqlException ) {
+            System.out.println( "error: can't reach database " );
+            JOptionPane.showMessageDialog(null, sqlException.getMessage(),
+              "Database error", JOptionPane.ERROR_MESSAGE);
+            
+            // try to recover from invalid user query
+            // by executing default query
+            try {
+              tableModel.setQuery( DEFAULT_QUERY );
+              queryArea.setText( DEFAULT_QUERY );
+            }
+            catch( SQLException sqlException2 ) {
+              JOptionPane.showMessageDialog(null, sqlException2.getMessage(),
+              "Database error", JOptionPane.ERROR_MESSAGE);
+
+              // ensure database connection is closed
+              tableModel.disconnectFromDatabase();
+
+              // terminate application
+              System.exit( 1 );
+            }
+          }
+        }
+      }
+    );
+
     // have the JFrame object create its own process
     setVisible(true);
 
