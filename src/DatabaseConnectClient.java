@@ -13,17 +13,24 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 import java.awt.BorderLayout;
-// import java.awt.FlowLayout;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.Rectangle;
 import java.io.File;
+import java.sql.SQLException;
 import java.util.Vector;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 
 // classTags: [FRONT END] [DRIVER] [CLIENT-SERVER]
@@ -37,8 +44,10 @@ import java.awt.Dimension;
 //  6. logs all client queries and updates
 public class DatabaseConnectClient extends JFrame {
 
-  /* class variables that represent GUI components */
-  private JTextArea queryArea;
+  /* class variables */
+  static final String DEFAULT_QUERY = "SELECT * FROM racewinners";
+  private ResultSetTableModel tableModel;
+  private JTable queryResultTable;
   
   /* CONSTRUCTOR */
   public DatabaseConnectClient() {
@@ -52,7 +61,7 @@ public class DatabaseConnectClient extends JFrame {
     super("SQL Client App Version 1 - (GDF - CNT 4714 - Summer 2022 - Project 2)");
     
     // set dimensions of JFrame
-    setSize( 2000, 1200 );
+    setSize( 2400, 1200 );
 
     /* INITIALIZE GUI COMPONENTS */
     // try-catch structure necessary because
@@ -60,179 +69,216 @@ public class DatabaseConnectClient extends JFrame {
     //    handled in the 'ClassNotFoundException' catch block
     //  2. Database connection invalid:
     //    handled in the 'SQLException' catch block
+
+    /* INSTANTIATE 'Color' OBJECTS */
+    //  These Color objects are used to paint different components
+    Color verylightGrey = new Color( 238, 238, 238 );
+    Color limeGreen = new Color( 1, 255, 0 );
+
+    // change background color of JFrame with methods
+    // '.getContentPane()' from the 'JFrame' class and
+    //    .getContentPane(): why?
+    //      "In Java Swing, the layer that is used to hold objects is called the 'Content Pane'."
+    //      The window that pops up when the program is run IS the content pane.
+    //        Therefore, if modifying anything on this window, the content pane needs to be changed.
+    // '.setBackground(Color)' from the 'Component' class. 
+    //    JFrame methods can be called statically since this class
+    //    EXTENDS the JFrame class.
+    //      in other words, the JVM knows JFrame methods are in reference
+    //      to 'DatabaseConnectClient' since this code is inside the class's constructor
+    //      and the class IS A JFrame object.
+    getContentPane().setBackground( verylightGrey );
+
+    /* INITIALIZE 'JButton' COMPONENTS */
+    JButton clearSQLCommand = new JButton( "Clear SQL Command" );
+    clearSQLCommand.setBackground( Color.WHITE );
+    clearSQLCommand.setForeground( Color.RED );
+
+    JButton executeSQLCommand = new JButton( "Execute SQL Command" );
+    executeSQLCommand.setBackground( limeGreen );
+
+    // Layout buttons left to right using a BoxLayout manager
+    //  buttonBox organizes its components from left to right ("LINE_AXIS").
+    Box buttonBox = new Box( BoxLayout.LINE_AXIS );
+
+    // Components are organized in the order they are added:
+    //  Adding 'clearSQLCommand' first ensures it is on the left.
+
+    buttonBox.add( clearSQLCommand );
+    buttonBox.add( executeSQLCommand );
+
+    /* INSTANTIATE TOP-RIGHT OF JFRAME CONTENT PANE 
+      *  The purpose of the top-right components is to input, clear, and execute
+      *  SQL commands.
+      *  includedComponenets
+      *    1. 'clearSQLCommand'    (JButton) 
+      *    2. 'executesSQLCommand' (JButton)
+      *    3. 'queryAreaLabel'     (JLabel)
+      *    4. 'queryArea'          (JTextArea)
+      */
+    JLabel queryAreaLabel = new JLabel( "Enter An SQL Command" );
+
+    /* INSTANTIATE A 'JTextArea' OBJECT */
+    //  the purpose of the JTextArea is to allow the user to pass MySQL queries to the client
+    //  when connected to the database, the client then passes the query to the database (server).
+    //    This is the "two-tier" behavior!
+    JTextArea queryArea = new JTextArea();
+
+    // set text wrapping property.
+    // passing 'true' as a parameter has text wrap at word boundary
+    // passing 'false' has text wrap at character boundary
+    queryArea.setWrapStyleWord( true );
+    
+    // set line wrapping property.
+    // 'true' paramater has lines wrap if they exceed JTextArea width
+    // 'false' paramter has lines never wrap
+    // queryArea.setLineWrap( true );
+
+    // align all SQL Command Area components in 'topRightBox'
+    //  topRightBox componenets are aligned from top to bottom
+    Box topRightBox = new Box( BoxLayout.PAGE_AXIS );
+    topRightBox.add( queryAreaLabel );
+    topRightBox.add( queryArea );
+    topRightBox.add( buttonBox );
+
+    /* INSTANTIATE TOP-LEFT OF JFRAME CONTENT PANE 
+      *  The purpose of the top-left components is to log in to the database
+      *  as any arbitrary user via a properties file.
+      *  includedComponenets
+      *    1. 'connectionDetailsLabel'     (JLabel) 
+      *    2. 'propertiesFilePane'         (JTextPane)
+      *    3. 'propertiesFileComboBox'     (JComboBox)
+      *    4. 'usernamePane'               (JTextPane)
+      *    5. 'usernameField'              (JTextField)
+      *    6. 'passwordPane'               (JTextPane)
+      *    7. 'passwordField'              (JPasswordField)
+      *    8. 'connectToDatabaseButton'    (JButton)
+      */
+
+    JLabel connectionDetailsLabel = new JLabel( "Connection Details" );
+    
+    JTextPane propertiesFilePane = new JTextPane();
+
+    // hard-code 'File' objects to put into a vector
+    File rootUserFile = new File( "root.properties" );
+    File clientUserFile = new File( "client.properties" );
+
+    // instantiate and populate a Vector of files
+    //  'propertiesFileList' is passed to a JComboBox to provide options
+    Vector propertiesFileList = new Vector();
+    propertiesFileList.add( 0, rootUserFile );
+    propertiesFileList.add( 1, clientUserFile );
+
+    // System.out.println( propertiesFileList.size() );
+
+    JComboBox propertiesFileComboBox = new JComboBox( propertiesFileList );
+
+    // use a Box to align a pane with its respective input field
+    Box propertiesFileBox = new Box( BoxLayout.LINE_AXIS );
+    propertiesFileBox.add( propertiesFilePane );
+    propertiesFileBox.add( propertiesFileComboBox );
+
+    JTextPane usernamePane = new JTextPane();
+
+    JTextField usernameField = new JTextField();
+
+    Box usernameBox = new Box( BoxLayout.LINE_AXIS );
+    usernameBox.add( usernamePane );
+    usernameBox.add( usernameField );
+
+    JTextPane passwordPane = new JTextPane();
+
+    JPasswordField passwordField = new JPasswordField();
+
+    Box passwordBox = new Box( BoxLayout.LINE_AXIS );
+    passwordBox.add( passwordPane );
+    passwordBox.add( passwordField );
+
+    JButton connectToDatabaseButton = new JButton( "Connect to Database" );
+
+    Box topLeftBox = new Box( BoxLayout.PAGE_AXIS );
+    topLeftBox.add( connectionDetailsLabel );
+    topLeftBox.add( propertiesFileBox );
+    topLeftBox.add( usernameBox );
+    topLeftBox.add( passwordBox );
+    topLeftBox.add( connectToDatabaseButton );
+
+    /***** SPLIT JFRAME CONTENT INTO TWO CENTRAL BOXES *****/
+
+    // 'northBox' is the top half of the JFrame content
+    //  northBox organizes its content left to right
+    Box northBox = new Box( BoxLayout.LINE_AXIS );
+
+    northBox.add( topLeftBox );
+    northBox.add( topRightBox );
+    
+    /* INSTANTIATE BOTTOM OF JFRAME CONTENT PANE
+    *  The purpose of the bottom components is to display query results.
+      *  includedComponenets
+      *    1. 'SQLExecutionResultLabel'      (JLabel)
+      *    2. 'queryResultTable'             (JScrollPane/JTable/ResultSetTableModel)
+      *    3. 'clearResultButton'            (JButton)
+      */
+
+    JLabel SQLExecutionResultLabel = new JLabel( "SQL Execution Result Window" );
+
+    /* INSTANTIATE A 'JTable' OBJECT */
+    //  Must be done in a try-catch block since the 'ResultSetTableModel' class
+    //  specifies some errors that might be thrown.
     try {
+      tableModel = new ResultSetTableModel( DEFAULT_QUERY );
 
-      /* INSTANTIATE 'Color' OBJECTS */
-      //  These Color objects are used to paint different components
-      Color verylightGrey = new Color( 238, 238, 238 );
-      Color limeGreen = new Color( 1, 255, 0 );
-
-      // change background color of JFrame with methods
-      // '.getContentPane()' from the 'JFrame' class and
-      //    .getContentPane(): why?
-      //      "In Java Swing, the layer that is used to hold objects is called the 'Content Pane'."
-      //      The window that pops up when the program is run IS the content pane.
-      //        Therefore, if modifying anything on this window, the content pane needs to be changed.
-      // '.setBackground(Color)' from the 'Component' class. 
-      //    JFrame methods can be called statically since this class
-      //    EXTENDS the JFrame class.
-      //      in other words, the JVM knows JFrame methods are in reference
-      //      to 'DatabaseConnectClient' since this code is inside the class's constructor
-      //      and the class IS A JFrame object.
-      getContentPane().setBackground( verylightGrey );
-
-      /* INITIALIZE 'JButton' COMPONENTS */
-      JButton clearSQLCommand = new JButton( "Clear SQL Command" );
-      clearSQLCommand.setBackground( Color.WHITE );
-      clearSQLCommand.setForeground( Color.RED );
-
-      JButton executeSQLCommand = new JButton( "Execute SQL Command" );
-      executeSQLCommand.setBackground( limeGreen );
-
-      // Layout buttons left to right using a BoxLayout manager
-      //  buttonBox organizes its components from left to right ("LINE_AXIS").
-      Box buttonBox = new Box( BoxLayout.LINE_AXIS );
-
-      // Components are organized in the order they are added:
-      //  Adding 'clearSQLCommand' first ensures it is on the left.
-
-      buttonBox.add( clearSQLCommand );
-      buttonBox.add( executeSQLCommand );
-
-      /* INSTANTIATE TOP-RIGHT OF JFRAME CONTENT PANE 
-       *  The purpose of the top-right components is to input, clear, and execute
-       *  SQL commands.
-       *  includedComponenets
-       *    1. 'clearSQLCommand'    (JButton) 
-       *    2. 'executesSQLCommand' (JButton)
-       *    3. 'queryAreaLabel'     (JLabel)
-       *    4. 'queryArea'          (JTextArea)
-       */
-      JLabel queryAreaLabel = new JLabel( "Enter An SQL Command" );
-
-      /* INSTANTIATE A 'JTextArea' OBJECT */
-      //  the purpose of the JTextArea is to allow the user to pass MySQL queries to the client
-      //  when connected to the database, the client then passes the query to the database (server).
-      //    This is the "two-tier" behavior!
-      queryArea = new JTextArea();
-
-      // set text wrapping property.
-      // passing 'true' as a parameter has text wrap at word boundary
-      // passing 'false' has text wrap at character boundary
-      queryArea.setWrapStyleWord( true );
-      
-      // set line wrapping property.
-      // 'true' paramater has lines wrap if they exceed JTextArea width
-      // 'false' paramter has lines never wrap
-      // queryArea.setLineWrap( true );
-
-      // align all SQL Command Area components in 'topRightBox'
-      //  topRightBox componenets are aligned from top to bottom
-      Box topRightBox = new Box( BoxLayout.PAGE_AXIS );
-      topRightBox.add( queryAreaLabel );
-      topRightBox.add( queryArea );
-      topRightBox.add( buttonBox );
-
-      /* INSTANTIATE TOP-LEFT OF JFRAME CONTENT PANE 
-       *  The purpose of the top-left components is to log in to the database
-       *  as any arbitrary user via a properties file.
-       *  includedComponenets
-       *    1. 'connectionDetailsLabel'     (JLabel) 
-       *    2. 'propertiesFilePane'         (JTextPane)
-       *    3. 'propertiesFileComboBox'     (JComboBox)
-       *    4. 'usernamePane'               (JTextPane)
-       *    5. 'usernameField'              (JTextField)
-       *    6. 'passwordPane'               (JTextPane)
-       *    7. 'passwordField'              (JPasswordField)
-       *    8. 'connectToDatabaseButton'    (JButton)
-       */
-
-      JLabel connectionDetailsLabel = new JLabel( "Connection Details" );
-      
-      JTextPane propertiesFilePane = new JTextPane();
-
-      // hard-code 'File' objects to put into a vector
-      File rootUserFile = new File( "root.properties" );
-      File clientUserFile = new File( "client.properties" );
-
-      // instantiate and populate a Vector of files
-      //  'propertiesFileList' is passed to a JComboBox to provide options
-      Vector propertiesFileList = new Vector();
-      propertiesFileList.add( 0, rootUserFile );
-      propertiesFileList.add( 1, clientUserFile );
-
-      // System.out.println( propertiesFileList.size() );
-
-      JComboBox propertiesFileComboBox = new JComboBox( propertiesFileList );
-
-      // use a Box to align a pane with its respective input field
-      Box propertiesFileBox = new Box( BoxLayout.LINE_AXIS );
-      propertiesFileBox.add( propertiesFilePane );
-      propertiesFileBox.add( propertiesFileComboBox );
-
-      JTextPane usernamePane = new JTextPane();
-
-      JTextField usernameField = new JTextField();
-
-      Box usernameBox = new Box( BoxLayout.LINE_AXIS );
-      usernameBox.add( usernamePane );
-      usernameBox.add( usernameField );
-
-      JTextPane passwordPane = new JTextPane();
-
-      JPasswordField passwordField = new JPasswordField();
-
-      Box passwordBox = new Box( BoxLayout.LINE_AXIS );
-      passwordBox.add( passwordPane );
-      passwordBox.add( passwordField );
-
-      JButton connectToDatabaseButton = new JButton( "Connect to Database" );
-
-      Box topLeftBox = new Box( BoxLayout.PAGE_AXIS );
-      topLeftBox.add( connectionDetailsLabel );
-      topLeftBox.add( propertiesFileBox );
-      topLeftBox.add( usernameBox );
-      topLeftBox.add( passwordBox );
-      topLeftBox.add( connectToDatabaseButton );
-
-      /***** SPLIT JFRAME CONTENT INTO TWO CENTRAL BOXES *****/
-
-      // 'northBox' is the top half of the JFrame content
-      //  northBox organizes its content left to right
-      Box northBox = new Box( BoxLayout.LINE_AXIS );
-
-      northBox.add( topLeftBox );
-      northBox.add( topRightBox );
-
-      //  'southBox' is the bottom half of the JFrame content
-      //  southBox organizes its content top to bottom
-      Box southBox = new Box( BoxLayout.PAGE_AXIS );
-    
-      // add Box objects to JFrame.
-      //  having the boxes managed by a BorderLayout manager allows them
-      //  to take up as much space as the window is given.
-      add( northBox, BorderLayout.NORTH );
-      add( southBox, BorderLayout.SOUTH );
-
-      // have the JFrame object create its own process
-      setVisible(true);
+      queryResultTable = new JTable(tableModel);
     }
-    // catch(ClassNotFoundException classNotFound) {
-      
-      //   // instantiate and intitalize a 'JOptionPane' object
-    //   // to deliver an error pop-up.
-    //   JOptionPane.showMessageDialog(null, "MySQL driver not found",
-    //     "Driver not found", JOptionPane.ERROR_MESSAGE);
-    
-    //   // terminate program
-    //   //  the parameter "1" indicates an abnormal program termination
-    //   System.exit(1);
-    // }
-    finally {
-      // DISPOSE of JFrame when user clicks exits out of process
-      // this is alternative to the default behavior of HIDING on close
-      setDefaultCloseOperation( DISPOSE_ON_CLOSE );
+    catch( ClassNotFoundException classNotFound) {
+      JOptionPane.showMessageDialog( null, "MySQL driver not found",
+        "Driver not found", JOptionPane.ERROR_MESSAGE);
+
+      // terminate application
+      System.exit( 1 );
     }
+    catch ( SQLException sqlException ) {
+      JOptionPane.showMessageDialog( null, sqlException.getMessage(),
+        "Database error", JOptionPane.ERROR_MESSAGE);
+
+      // ensure database connection is closed
+      tableModel.disconnectFromDatabase();
+
+      // terminate application
+      System.exit( 1 );
+    }
+
+    JButton clearResultButton = new JButton( "Clear Result Window" );
+    
+    // 'southBox' is the bottom half of the JFrame content
+    //   southBox organizes its content top to bottom
+    Box southBox = new Box( BoxLayout.PAGE_AXIS );
+    southBox.add( SQLExecutionResultLabel );
+    southBox.add( new JScrollPane( queryResultTable ) );
+    southBox.add( clearResultButton );
+
+    // add Box objects to JFrame.
+    //  having the boxes managed by a BorderLayout manager allows them
+    //  to take up as much space as the window is given.
+    add( northBox, BorderLayout.NORTH );
+    add( southBox, BorderLayout.SOUTH );
+    
+    // have the JFrame object create its own process
+    setVisible(true);
+
+    // DISPOSE of JFrame when user clicks exits out of process
+    // this is alternative to the default behavior of HIDING on close
+    setDefaultCloseOperation( DISPOSE_ON_CLOSE );
+
+    // ensure database connection is closed when user quits application
+    //  implementation: in-line function
+    addWindowListener( new WindowAdapter() {
+      // disconnect from database and exit when window has closed
+      public void windowClosed( WindowEvent event ) {
+        tableModel.disconnectFromDatabase();
+        System.exit( 0 );
+      }
+    });
     
   }
   
