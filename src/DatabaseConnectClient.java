@@ -388,10 +388,6 @@ public class DatabaseConnectClient extends JFrame {
             databaseURL = properties.getProperty( "MYSQL_DB_URL" );
             databaseUser = properties.getProperty( "MYSQL_DB_USERNAME" );
             databasePass = properties.getProperty( "MYSQL_DB_PASSWORD" );
-
-            // graphically display properties file info
-            usernameField.setText( databaseUser );
-            passwordField.setText( databasePass );
           }
           catch( IOException e ) {
             e.printStackTrace();
@@ -403,16 +399,36 @@ public class DatabaseConnectClient extends JFrame {
     connectToDatabaseButton.addActionListener(
       new ActionListener() {
 
-        // try connecting to database with '.establishConnection'
-        public void actionPerformed( ActionEvent connect ) {
-          // only connect if all required login information exists (not null).
-          try {
-            tableModel.establishConnection( propertiesFileName );
+        boolean correctUsername = false;
+        boolean correctPassword = false;
 
-            connectionStatusPane.setText( "Connected to " + databaseURL);
+        public void actionPerformed( ActionEvent connect ) {
+          // check if the the user/pass entered into the client MATCHES the properties file.
+          if( usernameField.getText().equals( databaseUser ) ) {
+            correctUsername = true;
           }
-          catch( NullPointerException e ) {
-            e.printStackTrace();
+
+          String convertedPass = new String( passwordField.getPassword() );
+
+          if( convertedPass.equals( databasePass )) {
+            correctPassword = true;
+          }
+
+          if( correctUsername && correctPassword ) {
+            // only connect if all required login information exists (not null).
+            try {
+              // try connecting to database with '.establishConnection'
+              tableModel.establishConnection( propertiesFileName );
+  
+              connectionStatusPane.setText( "Connected to " + databaseURL);
+            }
+            catch( NullPointerException e ) {
+              e.printStackTrace();
+            }
+          }
+          else {
+            JOptionPane.showMessageDialog( null, "Unknown login",
+              "Login failed", JOptionPane.ERROR_MESSAGE);
           }
         }
       }
