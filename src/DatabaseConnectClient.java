@@ -53,9 +53,10 @@ public class DatabaseConnectClient extends JFrame {
   private ResultSetTableModel tableModel;
   private JTable queryResultTable;
   private JTextArea queryArea;
-  private String databaseURL;
-  private String databaseUser;
-  private String databasePass;
+  private String propertiesFileName = null;
+  private String databaseURL = null;
+  private String databaseUser = null;
+  private String databasePass = null;
   
   /* CONSTRUCTOR */
   public DatabaseConnectClient() {
@@ -348,7 +349,6 @@ public class DatabaseConnectClient extends JFrame {
         // the purpose of 'clearResultButton' is to clear JTable.
         public void actionPerformed( ActionEvent clearTable ) {
           tableModel.setRowCount(0);
-          queryResultTable.setVisible( false );
         }
       }
     );
@@ -369,15 +369,16 @@ public class DatabaseConnectClient extends JFrame {
      *    
      */
 
+    // have the properties file combo box assist in logging in
     propertiesFileComboBox.addActionListener(
       new ActionListener() {
 
         // the propertiesFileComboBox auto-populates the username and password fields on selection.
-        public void actionPerformed( ActionEvent connect ) {
+        public void actionPerformed( ActionEvent choose ) {
 
           FileInputStream propFile = null;
           Properties properties = new Properties();
-          String propertiesFileName = propertiesFileComboBox.getSelectedItem().toString();
+          propertiesFileName = propertiesFileComboBox.getSelectedItem().toString();
 
           try {
             propFile = new FileInputStream( propertiesFileName );
@@ -396,7 +397,24 @@ public class DatabaseConnectClient extends JFrame {
             e.printStackTrace();
           }
         }
+      }
+    );
 
+    connectToDatabaseButton.addActionListener(
+      new ActionListener() {
+
+        // try connecting to database with '.establishConnection'
+        public void actionPerformed( ActionEvent connect ) {
+          // only connect if all required login information exists (not null).
+          try {
+            tableModel.establishConnection( propertiesFileName );
+
+            connectionStatusPane.setText( "Connected to " + databaseURL);
+          }
+          catch( NullPointerException e ) {
+            e.printStackTrace();
+          }
+        }
       }
     );
 
