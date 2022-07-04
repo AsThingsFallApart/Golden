@@ -46,35 +46,19 @@ public class ResultSetTableModel extends AbstractTableModel
    
    // constructor initializes resultSet and obtains its meta data object;
    // determines number of rows
-   public ResultSetTableModel( String query ) 
+   public ResultSetTableModel( Connection connect ) 
       throws SQLException, ClassNotFoundException
    {         
 
-	   Properties properties = new Properties();
-	   FileInputStream filein = null;
-	   MysqlDataSource dataSource = null;
-
-      // read properties file
 	   try {
-	    	filein = new FileInputStream("root.properties");
-	    	properties.load(filein);
-	    	dataSource = new MysqlDataSource();
-	    	dataSource.setURL(properties.getProperty("MYSQL_DB_URL"));
-	    	dataSource.setUser(properties.getProperty("MYSQL_DB_USERNAME"));
-	    	dataSource.setPassword(properties.getProperty("MYSQL_DB_PASSWORD")); 	
-	    
-         // connect to database bikes and query database
   	      // establish connection to database
-         Connection connection = dataSource.getConnection();
+         Connection connection = connect;
 
          // create Statement to query database
          statement = connection.createStatement( ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY );
 
          // update database connection status
          connectedToDatabase = true;
-
-         // set query and execute it
-         setQuery( query );
    
          //set update and execute it
          //setUpdate (query);
@@ -84,40 +68,15 @@ public class ResultSetTableModel extends AbstractTableModel
          sqlException.printStackTrace();
          System.exit( 1 );
       } // end catch
-      catch (IOException e) {
-            e.printStackTrace();
-      }  
    } // end constructor ResultSetTableModel
 
-   public void establishConnection( String propertiesFile ) {
+   public void establishConnection( Connection dbLink ) {
       // change class variable 'connection' to login as an arbitrary user
-      Properties properties = new Properties();
-	   FileInputStream filein = null;
-	   MysqlDataSource dataSource = null;
-
-      // try to find properties file
-      try {
-         filein = new FileInputStream( propertiesFile );
-         properties.load( filein );
-
-         // change 'MysqlDataSource' fields to corresponding fields in passed parameter
-         dataSource = new MysqlDataSource();
-         dataSource.setURL(properties.getProperty( "MYSQL_DB_URL" ) );
-         dataSource.setUser(properties.getProperty( "MYSQL_DB_USERNAME" ) );
-         dataSource.setPassword(properties.getProperty( "MYSQL_DB_PASSWORD" ) );
-
-         connection = dataSource.getConnection();
+   
+         connection = dbLink;
 
          // update internal connection status
          connectedToDatabase = true;
-      }
-      catch( SQLException sqlException ) {
-         sqlException.printStackTrace();
-         System.exit( 1 );
-      }
-      catch( IOException e ) {
-         e.printStackTrace();
-      }
    }
 
    // mutator method: access internal 'rowCount' variable
