@@ -1,3 +1,14 @@
+/*
+ *  Name: Gregory Flynn
+ *  Course: CNT 4714 Summer 2022
+ *  Assignment title: Project 2 - A Two-tier Client-Server Application
+ *  Date: July 4, 2022
+ * 
+ *  Class: ResultSetTableModel.java
+ */
+
+// [FRONT-END]
+
 // A TableModel that supplies ResultSet data to a JTable.
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -12,6 +23,8 @@ import java.util.Properties;
 import javax.sql.DataSource;
 import com.mysql.cj.jdbc.MysqlDataSource;
 
+// from 'DriverManager' class to intialize a 'Connection' object.
+// this is the 'OLD STYLE' of connecting to a database.
 
 // ResultSet rows and columns are counted from 1. 
 // JTable rows and columns are counted from 0.
@@ -36,33 +49,35 @@ public class ResultSetTableModel extends AbstractTableModel
    public ResultSetTableModel( String query ) 
       throws SQLException, ClassNotFoundException
    {         
+
 	   Properties properties = new Properties();
 	   FileInputStream filein = null;
 	   MysqlDataSource dataSource = null;
-       //read properties file
+
+      // read properties file
 	   try {
-	    	filein = new FileInputStream("db.properties");
+	    	filein = new FileInputStream("root.properties");
 	    	properties.load(filein);
 	    	dataSource = new MysqlDataSource();
 	    	dataSource.setURL(properties.getProperty("MYSQL_DB_URL"));
 	    	dataSource.setUser(properties.getProperty("MYSQL_DB_USERNAME"));
 	    	dataSource.setPassword(properties.getProperty("MYSQL_DB_PASSWORD")); 	
 	    
-            // connect to database bikes and query database
-  	        // establish connection to database
-   	        Connection connection = dataSource.getConnection();
-	
-            // create Statement to query database
-            statement = connection.createStatement( ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY );
+         // connect to database bikes and query database
+  	      // establish connection to database
+         Connection connection = dataSource.getConnection();
 
-            // update database connection status
-            connectedToDatabase = true;
+         // create Statement to query database
+         statement = connection.createStatement( ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY );
 
-            // set query and execute it
-            setQuery( query );
-		
-		    //set update and execute it
-		    //setUpdate (query);
+         // update database connection status
+         connectedToDatabase = true;
+
+         // set query and execute it
+         setQuery( query );
+   
+         //set update and execute it
+         //setUpdate (query);
 	  } //end try
       catch ( SQLException sqlException ) 
       {
@@ -70,9 +85,15 @@ public class ResultSetTableModel extends AbstractTableModel
          System.exit( 1 );
       } // end catch
       catch (IOException e) {
-   	     e.printStackTrace();
+            e.printStackTrace();
       }  
    } // end constructor ResultSetTableModel
+
+   public void setRowCount(int rowCount) {
+      numberOfRows = rowCount;
+
+      fireTableStructureChanged();
+   }
 
    // get class that represents column type
    public Class getColumnClass( int column ) throws IllegalStateException
@@ -189,6 +210,7 @@ public class ResultSetTableModel extends AbstractTableModel
       numberOfRows = resultSet.getRow();  // get row number      
       
       // notify JTable that model has changed
+      // this 'fire' method is what updates the content pane
       fireTableStructureChanged();
    } // end method setQuery
 
