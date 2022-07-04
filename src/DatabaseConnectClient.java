@@ -27,7 +27,11 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.Rectangle;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Properties;
 import java.util.Vector;
 import java.awt.Color;
 import java.awt.Component;
@@ -45,10 +49,13 @@ import java.awt.Dimension;
 public class DatabaseConnectClient extends JFrame {
 
   /* class variables */
-  static final String DEFAULT_QUERY = "SELECT * FROM bikes";
+  static final String DEFAULT_QUERY = "SELECT * FROM racewinners";
   private ResultSetTableModel tableModel;
   private JTable queryResultTable;
   private JTextArea queryArea;
+  private String databaseURL;
+  private String databaseUser;
+  private String databasePass;
   
   /* CONSTRUCTOR */
   public DatabaseConnectClient() {
@@ -160,16 +167,18 @@ public class DatabaseConnectClient extends JFrame {
     JLabel connectionDetailsLabel = new JLabel( "Connection Details" );
     
     JTextPane propertiesFilePane = new JTextPane();
+    propertiesFilePane.setText( "Properties File" );
+    propertiesFilePane.setEditable( false );
 
-    // hard-code 'File' objects to put into a vector
-    File rootUserFile = new File( "root.properties" );
-    File clientUserFile = new File( "client.properties" );
+    // hard-code 'String' objects to put into a vector
+    String rootUserInfo = "root.properties";
+    String clientUserInfo = "client.properties";
 
-    // instantiate and populate a Vector of files
+    // instantiate and populate a Vector of Strings
     //  'propertiesFileList' is passed to a JComboBox to provide options
     Vector propertiesFileList = new Vector();
-    propertiesFileList.add( 0, rootUserFile );
-    propertiesFileList.add( 1, clientUserFile );
+    propertiesFileList.add( 0, rootUserInfo );
+    propertiesFileList.add( 1, clientUserInfo );
 
     // System.out.println( propertiesFileList.size() );
 
@@ -181,6 +190,8 @@ public class DatabaseConnectClient extends JFrame {
     propertiesFileBox.add( propertiesFileComboBox );
 
     JTextPane usernamePane = new JTextPane();
+    usernamePane.setText( "Username" );
+    usernamePane.setEditable( false );
 
     JTextField usernameField = new JTextField();
 
@@ -189,6 +200,8 @@ public class DatabaseConnectClient extends JFrame {
     usernameBox.add( usernameField );
 
     JTextPane passwordPane = new JTextPane();
+    passwordPane.setText( "Password" );
+    passwordPane.setEditable( false );
 
     JPasswordField passwordField = new JPasswordField();
 
@@ -197,6 +210,8 @@ public class DatabaseConnectClient extends JFrame {
     passwordBox.add( passwordField );
 
     JButton connectToDatabaseButton = new JButton( "Connect to Database" );
+    connectToDatabaseButton.setBackground(Color.BLUE);
+    connectToDatabaseButton.setForeground(Color.YELLOW);
 
     Box topLeftBox = new Box( BoxLayout.PAGE_AXIS );
     topLeftBox.add( connectionDetailsLabel );
@@ -224,6 +239,8 @@ public class DatabaseConnectClient extends JFrame {
      */
     
     JTextPane connectionStatusPane = new JTextPane();
+    connectionStatusPane.setText( "No Connection Now" );
+    connectionStatusPane.setEditable( false );
     
     JLabel SQLExecutionResultLabel = new JLabel( "SQL Execution Result Window" );
 
@@ -233,6 +250,7 @@ public class DatabaseConnectClient extends JFrame {
     try {
       tableModel = new ResultSetTableModel( DEFAULT_QUERY );
       queryResultTable = new JTable(tableModel);
+      queryResultTable.setGridColor(Color.BLACK);
     }
     catch( ClassNotFoundException classNotFound) {
       JOptionPane.showMessageDialog( null, "MySQL driver not found",
@@ -283,29 +301,28 @@ public class DatabaseConnectClient extends JFrame {
 
           // try to execute the user's query
           try {
-            System.out.println( "trying to execute query..." );
             tableModel.setQuery( queryArea.getText() );
           }
           catch( SQLException sqlException ) {
             JOptionPane.showMessageDialog(null, sqlException.getMessage(),
               "Database error", JOptionPane.ERROR_MESSAGE);
             
-            // try to recover from invalid user query
-            // by executing default query
-            try {
-              tableModel.setQuery( DEFAULT_QUERY );
-              queryArea.setText( DEFAULT_QUERY );
-            }
-            catch( SQLException sqlException2 ) {
-              JOptionPane.showMessageDialog(null, sqlException2.getMessage(),
-              "Database error", JOptionPane.ERROR_MESSAGE);
+            // // try to recover from invalid user query
+            // // by executing default query
+            // try {
+            //   tableModel.setQuery( DEFAULT_QUERY );
+            //   queryArea.setText( DEFAULT_QUERY );
+            // }
+            // catch( SQLException sqlException2 ) {
+            //   JOptionPane.showMessageDialog(null, sqlException2.getMessage(),
+            //   "Database error", JOptionPane.ERROR_MESSAGE);
 
-              // ensure database connection is closed
-              tableModel.disconnectFromDatabase();
+            //   // ensure database connection is closed
+            //   tableModel.disconnectFromDatabase();
 
-              // terminate application
-              System.exit( 1 );
-            }
+            //   // terminate application
+            //   System.exit( 1 );
+            // }
           }
         }
       }
@@ -317,8 +334,67 @@ public class DatabaseConnectClient extends JFrame {
 
         // the 'clearSQLCommand' button clears all text
         // in the query area.
-        public void actionPerformed( ActionEvent clear ) {
+        public void actionPerformed( ActionEvent clearCommand ) {
           queryArea.setText( "" );
+        }
+
+      }
+    );
+
+    // add button functionality for 'clearResultButton'
+    clearResultButton.addActionListener(
+      new ActionListener() {
+
+        // the purpose of 'clearResultButton' is to clear JTable.
+        public void actionPerformed( ActionEvent clearTable ) {
+          tableModel.setRowCount(0);
+          queryResultTable.setVisible( false );
+        }
+      }
+    );
+
+    /*
+     * HANDLE LOGINS
+     *  1. when the user selects an option from the JComboBox the following occurs:
+     *    1a. reads the .properties file for 'MYSQL_DB_USERNAME' key
+     *    1b. changes the text in 'usernameField' to the .properties corresponding value
+     *    1c. reads the .properties file for 'MYSQL_DB_PASSWORD' key
+     *    1d. changes the text in the 'passwordField' to the .properties correspondng value
+     *    1e. reads the .properties file for 'MYSQL_DB_URL' key
+     *    1f. stores the URL in 'databaseURL' internal variable
+     *  2. when the user presses the 'connectToDatabaseButton' object the following occurs:
+     *    2a. check if the URL is valid; if not, show an error dialog and cease
+     *    2b. update the text in the 'connectionStatusPane' to display string in 'databaseURL'
+     *    2c. run the '.establishConnection()' method; pass properties file name
+     *    
+     */
+
+    propertiesFileComboBox.addActionListener(
+      new ActionListener() {
+
+        // the propertiesFileComboBox auto-populates the username and password fields on selection.
+        public void actionPerformed( ActionEvent connect ) {
+
+          FileInputStream propFile = null;
+          Properties properties = new Properties();
+          String propertiesFileName = propertiesFileComboBox.getSelectedItem().toString();
+
+          try {
+            propFile = new FileInputStream( propertiesFileName );
+            properties.load( propFile );
+
+            // record all values from properties file by referencing their corresponding keys.
+            databaseURL = properties.getProperty( "MYSQL_DB_URL" );
+            databaseUser = properties.getProperty( "MYSQL_DB_USERNAME" );
+            databasePass = properties.getProperty( "MYSQL_DB_PASSWORD" );
+
+            // graphically display properties file info
+            usernameField.setText( databaseUser );
+            passwordField.setText( databasePass );
+          }
+          catch( IOException e ) {
+            e.printStackTrace();
+          }
         }
 
       }
