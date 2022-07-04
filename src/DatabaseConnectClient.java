@@ -213,12 +213,15 @@ public class DatabaseConnectClient extends JFrame {
     northBox.add( topRightBox );
     
     /* INSTANTIATE BOTTOM OF JFRAME CONTENT PANE
-    *  The purpose of the bottom components is to display query results.
-      *  includedComponenets
-      *    1. 'SQLExecutionResultLabel'      (JLabel)
-      *    2. 'queryResultTable'             (JScrollPane/JTable/ResultSetTableModel)
-      *    3. 'clearResultButton'            (JButton)
-      */
+     * The purpose of the bottom components is to display query results.
+     *  includedComponents:
+     *    1. 'connectionStatusPane'         (JTextPane)
+     *    2. 'SQLExecutionResultLabel'      (JLabel)
+     *    3. 'queryResultTable'             (JScrollPane/JTable/ResultSetTableModel)
+     *    4. 'clearResultButton'            (JButton)
+     */
+
+    JTextPane connectionStatusPane = new JTextPane();
 
     JLabel SQLExecutionResultLabel = new JLabel( "SQL Execution Result Window" );
 
@@ -253,6 +256,7 @@ public class DatabaseConnectClient extends JFrame {
     // 'southBox' is the bottom half of the JFrame content
     //   southBox organizes its content top to bottom
     Box southBox = new Box( BoxLayout.PAGE_AXIS );
+    southBox.add( connectionStatusPane );
     southBox.add( SQLExecutionResultLabel );
     southBox.add( new JScrollPane( queryResultTable ) );
     southBox.add( clearResultButton );
@@ -270,6 +274,7 @@ public class DatabaseConnectClient extends JFrame {
     // this is alternative to the default behavior of HIDING on close
     setDefaultCloseOperation( DISPOSE_ON_CLOSE );
 
+    // TODO: investigate 'NullPointerException' generated from this event
     // ensure database connection is closed when user quits application
     //  implementation: in-line function
     addWindowListener( new WindowAdapter() {
@@ -279,7 +284,7 @@ public class DatabaseConnectClient extends JFrame {
         System.exit( 0 );
       }
     });
-    
+
   }
   
   public static void main(String args[]) {
