@@ -7,7 +7,7 @@
  *  Class: ResultSetTableModel.java
  */
 
-// [FRONT-END]
+// [BACK-END]
 
 // A TableModel that supplies ResultSet data to a JTable.
 import java.io.FileInputStream;
@@ -89,6 +89,38 @@ public class ResultSetTableModel extends AbstractTableModel
       }  
    } // end constructor ResultSetTableModel
 
+   public void establishConnection( String propertiesFile ) {
+      // change class variable 'connection' to login as an arbitrary user
+      Properties properties = new Properties();
+	   FileInputStream filein = null;
+	   MysqlDataSource dataSource = null;
+
+      // try to find properties file
+      try {
+         filein = new FileInputStream( propertiesFile );
+         properties.load( filein );
+
+         // change 'MysqlDataSource' fields to corresponding fields in passed parameter
+         dataSource = new MysqlDataSource();
+         dataSource.setURL(properties.getProperty( "MYSQL_DB_URL" ) );
+         dataSource.setUser(properties.getProperty( "MYSQL_DB_USERNAME" ) );
+         dataSource.setPassword(properties.getProperty( "MYSQL_DB_PASSWORD" ) );
+
+         connection = dataSource.getConnection();
+
+         // update internal connection status
+         connectedToDatabase = true;
+      }
+      catch( SQLException sqlException ) {
+         sqlException.printStackTrace();
+         System.exit( 1 );
+      }
+      catch( IOException e ) {
+         e.printStackTrace();
+      }
+   }
+
+   // mutator method: access internal 'rowCount' variable
    public void setRowCount(int rowCount) {
       numberOfRows = rowCount;
 
