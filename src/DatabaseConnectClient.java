@@ -7,6 +7,7 @@
  *  Class: DatabaseConnectClient.java
  */
 
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
@@ -18,6 +19,13 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
+
+import com.mysql.cj.jdbc.MysqlDataSource;
+
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import java.awt.event.ActionListener;
@@ -31,6 +39,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.sql.Connection;
 import java.util.Properties;
 import java.util.Vector;
 import java.awt.Color;
@@ -49,7 +58,6 @@ import java.awt.Dimension;
 public class DatabaseConnectClient extends JFrame {
 
   /* class variables */
-  static final String DEFAULT_QUERY = "SELECT * FROM racewinners";
   private ResultSetTableModel tableModel;
   private JTable queryResultTable;
   private JTextArea queryArea;
@@ -57,6 +65,31 @@ public class DatabaseConnectClient extends JFrame {
   private String databaseURL = null;
   private String databaseUser = null;
   private String databasePass = null;
+  private boolean connectedToDatabase = false;
+  private Connection databaseLink;
+
+  // TODO: handle logging
+  // TODO: handle non-query commands
+  // TODO: start client with no connection (except logging connection) or query
+  // TODO: TODO: fix NullPointerException in ResultSetTableModel (evoked when trying to execute a query...)
+   /*
+    * HANDLE LOGGING
+    *   The client automatically makes a connection to the logging database
+    *   as the root user.
+    *   This connection is done with a special properties file ('logger.properties').
+    *
+    *   Keeping count of the number of queries and updates occurs
+    *   whenever the user clicks the 'Execute SQL Command' button.
+    *
+    *   There is logic in the event handler that updates the database
+    *   with incremented logging values everytime the button is clicked.
+    *
+    *   Commands that fail to execute are not logged.   
+    *     The client does not have 'UPDATE' privilges so
+    *     'num_updates' in the operationslog will always be 0.
+    */
+  
+  
   
   /* CONSTRUCTOR */
   public DatabaseConnectClient() {
@@ -130,7 +163,7 @@ public class DatabaseConnectClient extends JFrame {
     //  the purpose of the JTextArea is to allow the user to pass MySQL queries to the client
     //  when connected to the database, the client then passes the query to the database (server).
     //    This is the "two-tier" behavior!
-    queryArea = new JTextArea( DEFAULT_QUERY );
+    queryArea = new JTextArea();
 
     // set text wrapping property.
     // passing 'true' as a parameter has text wrap at word boundary
@@ -240,36 +273,27 @@ public class DatabaseConnectClient extends JFrame {
      */
     
     JTextPane connectionStatusPane = new JTextPane();
-    connectionStatusPane.setText( "No Connection Now" );
     connectionStatusPane.setEditable( false );
+    
+    // change the text color of the JTextPane to red
+    StyledDocument doc = connectionStatusPane.getStyledDocument();
+    Style style = connectionStatusPane.addStyle( "red text", null );
+    StyleConstants.setForeground( style, Color.RED );
+
+    try {
+      doc.insertString(doc.getLength(), "No Connection Now", style);
+    }
+    catch( BadLocationException e) {
+      e.printStackTrace();
+    }
+
+    connectionStatusPane.setBackground( Color.BLACK );
     
     JLabel SQLExecutionResultLabel = new JLabel( "SQL Execution Result Window" );
 
-    /* INSTANTIATE A 'JTable' OBJECT */
-    //  Must be done in a try-catch block since the 'ResultSetTableModel' class
-    //  specifies some errors that might be thrown.
-    try {
-      tableModel = new ResultSetTableModel( DEFAULT_QUERY );
-      queryResultTable = new JTable(tableModel);
-      queryResultTable.setGridColor(Color.BLACK);
-    }
-    catch( ClassNotFoundException classNotFound) {
-      JOptionPane.showMessageDialog( null, "MySQL driver not found",
-        "Driver not found", JOptionPane.ERROR_MESSAGE);
-
-      // terminate application
-      System.exit( 1 );
-    }
-    catch ( SQLException sqlException ) {
-      JOptionPane.showMessageDialog( null, sqlException.getMessage(),
-        "Database error", JOptionPane.ERROR_MESSAGE);
-
-      // ensure database connection is closed
-      tableModel.disconnectFromDatabase();
-
-      // terminate application
-      System.exit( 1 );
-    }
+    JScrollPane tableScroller = new JScrollPane();
+    tableScroller.setBorder( BorderFactory.createLineBorder( Color.BLACK ) );
+    tableScroller.setSize(new Dimension( 1000, 1000 ) );
 
     JButton clearResultButton = new JButton( "Clear Result Window" );
     
@@ -278,7 +302,7 @@ public class DatabaseConnectClient extends JFrame {
     Box southBox = new Box( BoxLayout.PAGE_AXIS );
     southBox.add( connectionStatusPane );
     southBox.add( SQLExecutionResultLabel );
-    southBox.add( new JScrollPane( queryResultTable ) );
+    southBox.add( tableScroller );
     southBox.add( clearResultButton );
 
     // add Box objects to JFrame.
@@ -288,17 +312,53 @@ public class DatabaseConnectClient extends JFrame {
     add( southBox, BorderLayout.SOUTH );
 
     /*
-    * ADD 'executeSQLCommand' BUTTON FUNCTIONALITY:
-    *  1. Get text from JTextArea (ideally correct SQL syntax)
-    *  2. use the '.setQuery' method from the 'ResultSetTableModel' class
-    *     to execute query
-    *  3. Update JTable
-    */
+     * [EXECUTE]
+     * ADD 'executeSQLCommand' BUTTON FUNCTIONALITY:
+     *  1. Get text from JTextArea (ideally correct SQL syntax)
+     *  2. use the '.setQuery' method from the 'ResultSetTableModel' class
+     *     to execute query/update JTable
+     */
     executeSQLCommand.addActionListener(
       new ActionListener() {
         // this ActionListener's 'actionPerformed' method
         // is defined as passing a query to the ResultSetTableModel.
         public void actionPerformed( ActionEvent buttonPressed ) {
+
+          System.out.println("connctedToDatabase: " + connectedToDatabase );
+
+          if( !connectedToDatabase ) {
+            throw new IllegalStateException( "Not Connected to Database" );
+          }
+
+          /* INSTANTIATE A 'JTable' OBJECT */
+          //  Must be done in a try-catch block since the 'ResultSetTableModel' class
+          //  specifies some errors that might be thrown.
+          try {
+            System.out.println( "executeValidity:" + databaseLink.isValid(1) );
+
+            tableModel = new ResultSetTableModel( databaseLink );
+            queryResultTable = new JTable( tableModel );
+            queryResultTable.setGridColor( Color.BLACK );
+
+            tableScroller.setViewportView( queryResultTable );
+          }
+          catch( ClassNotFoundException classNotFound) {
+            JOptionPane.showMessageDialog( null, "MySQL driver not found",
+              "Driver not found", JOptionPane.ERROR_MESSAGE);
+
+            // terminate application
+            System.exit( 1 );
+          }
+          catch ( SQLException sqlException ) {
+            JOptionPane.showMessageDialog( null, sqlException.getMessage(),
+              "Database error", JOptionPane.ERROR_MESSAGE);
+
+            // ensure database connection is closed
+            tableModel.disconnectFromDatabase();
+
+            // terminate application
+            System.exit( 1 );
+          }
 
           // try to execute the user's query
           try {
@@ -354,6 +414,7 @@ public class DatabaseConnectClient extends JFrame {
     );
 
     /*
+     * [CONNECT]
      * HANDLE LOGINS
      *  1. when the user selects an option from the JComboBox the following occurs:
      *    1a. reads the .properties file for 'MYSQL_DB_USERNAME' key
@@ -366,10 +427,9 @@ public class DatabaseConnectClient extends JFrame {
      *    2a. check if the URL is valid; if not, show an error dialog and cease
      *    2b. update the text in the 'connectionStatusPane' to display string in 'databaseURL'
      *    2c. run the '.establishConnection()' method; pass properties file name
-     *    
      */
 
-    // have the properties file combo box assist in logging in
+    // load properties from a properties file after selection
     propertiesFileComboBox.addActionListener(
       new ActionListener() {
 
@@ -379,6 +439,7 @@ public class DatabaseConnectClient extends JFrame {
           FileInputStream propFile = null;
           Properties properties = new Properties();
           propertiesFileName = propertiesFileComboBox.getSelectedItem().toString();
+          System.out.println( "propFileName: " + propertiesFileName );
 
           try {
             propFile = new FileInputStream( propertiesFileName );
@@ -396,6 +457,7 @@ public class DatabaseConnectClient extends JFrame {
       }
     );
 
+    // CONNECT BUTTON 
     connectToDatabaseButton.addActionListener(
       new ActionListener() {
 
@@ -409,21 +471,71 @@ public class DatabaseConnectClient extends JFrame {
           }
 
           String convertedPass = new String( passwordField.getPassword() );
-
           if( convertedPass.equals( databasePass )) {
             correctPassword = true;
           }
 
           if( correctUsername && correctPassword ) {
             // only connect if all required login information exists (not null).
+
             try {
-              // try connecting to database with '.establishConnection'
-              tableModel.establishConnection( propertiesFileName );
-  
-              connectionStatusPane.setText( "Connected to " + databaseURL);
+              // make a 'Connection' object 'databaseLink' to be used with execute SQL command button
+              FileInputStream propFile = null;
+              MysqlDataSource dataSource = null;
+              Properties properties = new Properties();
+
+              try {
+                System.out.println( "propFileName: " + propertiesFileName );
+                propFile = new FileInputStream( propertiesFileName );
+                properties.load(propFile);
+
+                dataSource = new MysqlDataSource();
+                dataSource.setURL( properties.getProperty( "MYSQL_DB_URL" ) );
+                System.out.println( dataSource.getURL() );
+                dataSource.setUser( properties.getProperty( "MYSQL_DB_USERNAME" ) );
+                System.out.println( dataSource.getUser() );
+                dataSource.setPassword( properties.getProperty( "MYSQL_DB_PASSWORD" ) );
+                System.out.println( dataSource.getPassword() );
+
+                // get connection to database
+                databaseLink = dataSource.getConnection();
+                System.out.println( "validity: " + databaseLink.isValid(10) );
+              }
+              catch( FileNotFoundException e) {
+                e.printStackTrace();
+              }
+              catch( IOException ioException ) {
+                ioException.printStackTrace();
+              }
+
+              // change the text color of the JTextPane to red
+              StyledDocument doc = connectionStatusPane.getStyledDocument();
+              Style style = connectionStatusPane.addStyle( "red text", null );
+              StyleConstants.setForeground( style, Color.RED );
+              String connectionStatusString = "Connected to " + databaseURL;
+
+              try {
+                doc.remove( 0, doc.getLength() );
+                doc.insertString( doc.getLength(), connectionStatusString, style );
+              }
+              catch( BadLocationException e) {
+                e.printStackTrace();
+              }
+
+              connectedToDatabase = true;
+              System.out.println("connctedToDatabase: " + connectedToDatabase );
             }
-            catch( NullPointerException e ) {
-              e.printStackTrace();
+            catch( NullPointerException nullPointer ) {
+              nullPointer.printStackTrace();
+            }
+            catch( SQLException sqlException ) {
+              JOptionPane.showMessageDialog( null, sqlException.getMessage(), 
+                "Database error", JOptionPane.ERROR_MESSAGE );
+               
+              // ensure database connection is closed
+              tableModel.disconnectFromDatabase();
+              
+              System.exit( 1 );   // terminate application
             }
           }
           else {
