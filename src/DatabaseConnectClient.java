@@ -281,15 +281,12 @@ public class DatabaseConnectClient extends JFrame {
         // is defined as passing a query to the ResultSetTableModel.
         public void actionPerformed( ActionEvent buttonPressed ) {
 
-          System.out.println( "button pressed!" );
-          System.out.println( "queryText: " + queryArea.getText());
           // try to execute the user's query
           try {
             System.out.println( "trying to execute query..." );
             tableModel.setQuery( queryArea.getText() );
           }
           catch( SQLException sqlException ) {
-            System.out.println( "error: can't reach database " );
             JOptionPane.showMessageDialog(null, sqlException.getMessage(),
               "Database error", JOptionPane.ERROR_MESSAGE);
             
@@ -311,6 +308,19 @@ public class DatabaseConnectClient extends JFrame {
             }
           }
         }
+      }
+    );
+
+    // add button functionality for 'clearSQLCommand'
+    clearSQLCommand.addActionListener(
+      new ActionListener() {
+
+        // the 'clearSQLCommand' button clears all text
+        // in the query area.
+        public void actionPerformed( ActionEvent clear ) {
+          queryArea.setText( "" );
+        }
+
       }
     );
 
