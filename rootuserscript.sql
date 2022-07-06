@@ -1,4 +1,4 @@
-# project2rootuserscript.sql
+# rootuserscript.sql
 # The root user execution script for Project Two - CNT 4714 - Summer 2022
 # all commands assumed to be executed by the root user
 
