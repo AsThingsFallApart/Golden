@@ -88,3 +88,38 @@ propertiesDropDownList:
 				-- filter for all files with the pattern "*.properties"
 			- ok never mind :(. I think I have to use JComboBox since the example doesn't
 			open up a file navigator.
+
+connectionStatusArea:
+	- possibleSwingComponent: "JTextPane"
+		-- set connection URL string with ".setText(String s)" method
+			--- inherited from 'JEditorPane' class
+		-- set color of text using ".setSelectedTextColor(Color c)" method
+			--- inherited from 'JTextComponent' class
+		-- set editability to 0 with ".setEditable" method
+			--- inherited from 'JTextComponent' class
+		-- set x-alignment to "all the way to the left" with ".setAlignmentX()" method
+			--- inherited from 'JComponent' class
+		-- set background color with ".setBackground(Color bg)" method
+			--- inherited from 'JComponent' class
+
+
+NOTES
+---------------------------------------------
+LAYOUTS:
+      // set "Layout" of JFrame
+      //  the Layout is how components are visually arranged.
+      //  Layout is managed by a "FlowLayout" object.
+      //   A FlowLayout object is commonly referred to as a "layout manager".
+      //    The FlowLayout manager arranges components sequentially,
+      //    left to right, in the order they are added.
+      //  The default layout manager for a JFrame object is "BorderLayout".
+      //    BorderLayout arranges components into five areas: NORTH, SOUTH, EAST, WEST, and CENTER
+      //    DANGER: BorderLayout does NOT respect the .setSize() method!
+      //      With BorderLayout, components will stretch to fill all available space
+      //  A "BoxLayout" manager aligns components in a container along a specified axis
+      //    When instantiating a BoxLayout object, the "target container" is the content pane.
+
+METADATA:
+	- metaData is initialized from a 'ResultSet' object
+		-- a ResultSet object is initialized from a 'Statement' object
+			--- a Statement object is initialized from a 'Connection' object
