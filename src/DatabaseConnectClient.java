@@ -34,17 +34,15 @@ import java.awt.event.ActionEvent;
 import java.awt.BorderLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.Rectangle;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Connection;
 import java.util.Properties;
 import java.util.Vector;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 
 // classTags: [FRONT END] [DRIVER] [CLIENT-SERVER]
@@ -69,33 +67,20 @@ public class DatabaseConnectClient extends JFrame {
   private String databaseUser = null;
   private String databasePass = null;
   private boolean connectedToDatabase = false;
-  private Connection databaseLink;
+
+  private MysqlDataSource dataSource;
+  private Properties properties;
+  private FileInputStream propertiesFileReader;
+  private Connection userDatabaseLink;
+  private Connection loggerDatabaseLink;
+  private Statement statement;
 
   // TODO: handle logging
   // TODO: handle non-query commands
-  // TODO: TODO: fix NullPointerException in ResultSetTableModel (evoked when trying to execute a query...)
-   /*
-    * HANDLE LOGGING
-    *   The client automatically makes a connection to the logging database
-    *   as the root user.
-    *   This connection is done with a special properties file ('logger.properties').
-    *
-    *   Keeping count of the number of queries and updates occurs
-    *   whenever the user clicks the 'Execute SQL Command' button.
-    *
-    *   There is logic in the event handler that updates the database
-    *   with incremented logging values everytime the button is clicked.
-    *
-    *   Commands that fail to execute are not logged.   
-    *     The client does not have 'UPDATE' privilges so
-    *     'num_updates' in the operationslog will always be 0.
-    */
-  
-  
-  
+
   /* CONSTRUCTOR */
   public DatabaseConnectClient() {
-    
+
     /* INITIALIZE 'JFrame' OBJECT */
     // evoke JFrame constructor and provide string.
     //  the constructor parameter string represents title of application.
@@ -106,6 +91,71 @@ public class DatabaseConnectClient extends JFrame {
     
     // set dimensions of JFrame
     setSize( 2400, 1200 );
+
+    /*
+     * HANDLE LOGGING
+     *   The client automatically makes a connection to the logging database
+     *   as the root user.
+     *   This connection is done with a special properties file ('logger.properties').
+     *
+     *   Keeping count of the number of queries and updates occurs
+     *   whenever the user clicks the 'Execute SQL Command' button.
+     *
+     *   There is logic in the event handler that updates the database
+     *   with incremented logging values everytime the button is clicked.
+     *
+     *   Commands that fail to execute are not logged.
+     */
+    
+    propertiesFileName = "logger.properties";
+
+    // read logger properties file.
+    // make a connection to the logging database as root user.
+    try {
+      propertiesFileReader = new FileInputStream( propertiesFileName );
+ 
+      properties = new Properties();
+      properties.load( propertiesFileReader );
+      
+      dataSource = new MysqlDataSource();
+      dataSource.setURL( properties.getProperty( "MYSQL_DB_URL" ) );
+      dataSource.setUser( properties.getProperty( "MYSQL_DB_USERNAME" ) );
+      dataSource.setPassword( properties.getProperty( "MYSQL_DB_PASSWORD" ) );
+
+      loggerDatabaseLink = dataSource.getConnection();
+
+      /*
+       * if no exceptions are thrown by this point,
+       * the logging connection is successful.
+       */
+
+      // reset logging database to 0 every time the client is started.
+      //  'UPDATE' SQL commands are executed in Java with
+      //  the '.executeUpdate(String update)' method from the 'Statement' class.
+
+      // initialize the Statement (null -> something)
+      statement = loggerDatabaseLink.createStatement();
+
+      String resetNumQueries = "UPDATE operationscount set num_queries=0";
+      String resetNumUpdate = "UPDATE operationscount set num_updates=0";
+
+      // have the Statement object execute the update commands
+      statement.executeUpdate( resetNumQueries );
+      statement.executeUpdate( resetNumUpdate );
+
+    }
+    catch( FileNotFoundException fileNotFound ) {
+      JOptionPane.showMessageDialog( null, "Logger properties file missing",
+        "Logging disabled", JOptionPane.ERROR_MESSAGE );
+
+      fileNotFound.printStackTrace();
+    }
+    catch( IOException ioException ) {
+      ioException.printStackTrace();
+    }
+    catch( SQLException sqlException ) {
+      sqlException.printStackTrace();
+    }
 
     /* INITIALIZE GUI COMPONENTS */
     // try-catch structure necessary because
@@ -345,9 +395,9 @@ public class DatabaseConnectClient extends JFrame {
 
           /* INSTANTIATE A 'JTable' OBJECT */
           try {
-            System.out.println( "executeValidity:" + databaseLink.isValid(1) );
+            System.out.println( "executeValidity:" + userDatabaseLink.isValid(1) );
 
-            tableModel = new ResultSetTableModel( queryArea.getText(), databaseLink );
+            tableModel = new ResultSetTableModel( queryArea.getText(), userDatabaseLink );
             queryResultTable = new JTable( tableModel );
             queryResultTable.setGridColor( Color.BLACK );
 
@@ -449,14 +499,13 @@ public class DatabaseConnectClient extends JFrame {
         // the propertiesFileComboBox auto-populates the username and password fields on selection.
         public void actionPerformed( ActionEvent choose ) {
 
-          FileInputStream propFile = null;
-          Properties properties = new Properties();
+          properties = new Properties();
           propertiesFileName = propertiesFileComboBox.getSelectedItem().toString();
           System.out.println( "propFileName: " + propertiesFileName );
 
           try {
-            propFile = new FileInputStream( propertiesFileName );
-            properties.load( propFile );
+            propertiesFileReader = new FileInputStream( propertiesFileName );
+            properties.load( propertiesFileReader );
 
             // record all values from properties file by referencing their corresponding keys.
             databaseURL = properties.getProperty( "MYSQL_DB_URL" );
@@ -492,27 +541,22 @@ public class DatabaseConnectClient extends JFrame {
             // only connect if all required login information exists (not null).
 
             try {
-              // make a 'Connection' object 'databaseLink' to be used with execute SQL command button
-              FileInputStream propFile = null;
-              MysqlDataSource dataSource = null;
-              Properties properties = new Properties();
+              // make a 'Connection' object 'userDatabaseLink' to be used with execute SQL command button
+              properties = new Properties();
 
               try {
                 System.out.println( "propFileName: " + propertiesFileName );
-                propFile = new FileInputStream( propertiesFileName );
-                properties.load(propFile);
+                propertiesFileReader = new FileInputStream( propertiesFileName );
+                properties.load( propertiesFileReader );
 
                 dataSource = new MysqlDataSource();
                 dataSource.setURL( properties.getProperty( "MYSQL_DB_URL" ) );
-                System.out.println( dataSource.getURL() );
                 dataSource.setUser( properties.getProperty( "MYSQL_DB_USERNAME" ) );
-                System.out.println( dataSource.getUser() );
                 dataSource.setPassword( properties.getProperty( "MYSQL_DB_PASSWORD" ) );
-                System.out.println( dataSource.getPassword() );
 
                 // get connection to database
-                databaseLink = dataSource.getConnection();
-                System.out.println( "validity: " + databaseLink.isValid(10) );
+                userDatabaseLink = dataSource.getConnection();
+                System.out.println( "validity: " + userDatabaseLink.isValid(10) );
               }
               catch( FileNotFoundException e) {
                 e.printStackTrace();
