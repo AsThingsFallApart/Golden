@@ -19,6 +19,7 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
@@ -291,11 +292,19 @@ public class DatabaseConnectClient extends JFrame {
     
     JLabel SQLExecutionResultLabel = new JLabel( "SQL Execution Result Window" );
 
-    JScrollPane tableScroller = new JScrollPane();
+    // create a place-holder area to display in JScrollPane before user enters their first query
+    JTextPane placeholder = new JTextPane();
+    placeholder.setEditable( false );
+    
+    /* INSTANTIATE A 'JScrollPane' OBJECT TO DISPLAY QUERY RESULTS */
+    JScrollPane tableScroller = new JScrollPane( placeholder,
+      ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+      ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED );
     tableScroller.setBorder( BorderFactory.createLineBorder( Color.BLACK ) );
-    tableScroller.setSize(new Dimension( 1000, 1000 ) );
+    tableScroller.setPreferredSize( new Dimension( 500, 500 ) );
 
     JButton clearResultButton = new JButton( "Clear Result Window" );
+    clearResultButton.setBackground( Color.YELLOW );
     
     // 'southBox' is the bottom half of the JFrame content
     //   southBox organizes its content top to bottom
@@ -320,6 +329,7 @@ public class DatabaseConnectClient extends JFrame {
      */
     executeSQLCommand.addActionListener(
       new ActionListener() {
+
         // this ActionListener's 'actionPerformed' method
         // is defined as passing a query to the ResultSetTableModel.
         public void actionPerformed( ActionEvent buttonPressed ) {
@@ -331,12 +341,10 @@ public class DatabaseConnectClient extends JFrame {
           }
 
           /* INSTANTIATE A 'JTable' OBJECT */
-          //  Must be done in a try-catch block since the 'ResultSetTableModel' class
-          //  specifies some errors that might be thrown.
           try {
             System.out.println( "executeValidity:" + databaseLink.isValid(1) );
 
-            tableModel = new ResultSetTableModel( databaseLink );
+            tableModel = new ResultSetTableModel( queryArea.getText(), databaseLink );
             queryResultTable = new JTable( tableModel );
             queryResultTable.setGridColor( Color.BLACK );
 
