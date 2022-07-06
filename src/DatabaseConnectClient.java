@@ -62,6 +62,8 @@ public class DatabaseConnectClient extends JFrame {
   private ResultSetTableModel tableModel;
   private JTable queryResultTable;
   private JTextArea queryArea;
+  private JScrollPane tableScroller;
+
   private String propertiesFileName = null;
   private String databaseURL = null;
   private String databaseUser = null;
@@ -71,7 +73,6 @@ public class DatabaseConnectClient extends JFrame {
 
   // TODO: handle logging
   // TODO: handle non-query commands
-  // TODO: start client with no connection (except logging connection) or query
   // TODO: TODO: fix NullPointerException in ResultSetTableModel (evoked when trying to execute a query...)
    /*
     * HANDLE LOGGING
@@ -295,9 +296,9 @@ public class DatabaseConnectClient extends JFrame {
     // create a place-holder area to display in JScrollPane before user enters their first query
     JTextPane placeholder = new JTextPane();
     placeholder.setEditable( false );
-    
+
     /* INSTANTIATE A 'JScrollPane' OBJECT TO DISPLAY QUERY RESULTS */
-    JScrollPane tableScroller = new JScrollPane( placeholder,
+    tableScroller = new JScrollPane( placeholder,
       ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
       ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED );
     tableScroller.setBorder( BorderFactory.createLineBorder( Color.BLACK ) );
@@ -337,6 +338,8 @@ public class DatabaseConnectClient extends JFrame {
           System.out.println("connctedToDatabase: " + connectedToDatabase );
 
           if( !connectedToDatabase ) {
+            JOptionPane.showMessageDialog( null, "Not Connected to Database",
+              "Database error", JOptionPane.ERROR_MESSAGE);
             throw new IllegalStateException( "Not Connected to Database" );
           }
 
@@ -415,8 +418,10 @@ public class DatabaseConnectClient extends JFrame {
       new ActionListener() {
 
         // the purpose of 'clearResultButton' is to clear JTable.
+        // Do this by replacing the JTable in the JScrollPane viewport
+        // with a white, uneditable pane.
         public void actionPerformed( ActionEvent clearTable ) {
-          tableModel.setRowCount(0);
+          tableScroller.setViewportView( placeholder );
         }
       }
     );
