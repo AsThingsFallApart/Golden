@@ -20,7 +20,6 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingConstants;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
@@ -47,6 +46,9 @@ import java.awt.Color;
 import java.awt.Dimension;
 
 // classTags: [FRONT END] [DRIVER] [CLIENT-SERVER]
+
+// approximateTimeTakenToComplete: 100+ hours
+//  history: github.com/AsThingsFallApart/Golden
 
 // Create a 'DatabaseConnectClient' object that
 //  1. graphically displays all pertinent information
@@ -77,8 +79,6 @@ public class DatabaseConnectClient extends JFrame {
   private Connection userDatabaseLink;
   private Connection loggerDatabaseLink;
   private Statement statement;
-
-  // TODO: handle non-query commands
 
   /* CONSTRUCTOR */
   public DatabaseConnectClient() {

@@ -7,26 +7,17 @@
  *  Class: ResultSetTableModel.java
  */
 
-// [BACK-END]
-
-// A TableModel that supplies ResultSet data to a JTable.
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.sql.Connection; 
 import java.sql.Statement;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-
 import javax.swing.JOptionPane;
 import javax.swing.table.AbstractTableModel;
-import java.util.Properties;
-import javax.sql.DataSource;
-import com.mysql.cj.jdbc.MysqlDataSource;
 
-// from 'DriverManager' class to intialize a 'Connection' object.
-// this is the 'OLD STYLE' of connecting to a database.
+// classTags: [BACK-END]
+
+// A TableModel that supplies ResultSet data to a JTable.
 
 // ResultSet rows and columns are counted from 1. 
 // JTable rows and columns are counted from 0.
