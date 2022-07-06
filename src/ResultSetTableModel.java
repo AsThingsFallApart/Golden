@@ -18,6 +18,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+
+import javax.swing.JOptionPane;
 import javax.swing.table.AbstractTableModel;
 import java.util.Properties;
 import javax.sql.DataSource;
@@ -75,12 +77,17 @@ public class ResultSetTableModel extends AbstractTableModel
 	   } //end try
       catch ( SQLException sqlException ) 
       {
+         // sent debugging information to console
          sqlException.printStackTrace();
-         System.exit( 1 );
+
+         // show a popup error in client
+         JOptionPane.showMessageDialog( null, 
+            sqlException.getMessage(), "Database Error", 
+            JOptionPane.ERROR_MESSAGE );
       } // end catch
    } // end constructor ResultSetTableModel
 
-   public void establishConnection( Connection dbLink ) {
+   public void setConnection( Connection dbLink ) {
       // change class variable 'connection' to login as an arbitrary user
    
          connection = dbLink;
@@ -196,23 +203,33 @@ public class ResultSetTableModel extends AbstractTableModel
    public void setQuery( String query ) 
       throws SQLException, IllegalStateException 
    {
-      // ensure database connection is available
-      if ( !connectedToDatabase ) 
-         throw new IllegalStateException( "Not Connected to Database" );
+      try {
+         // ensure database connection is available
+         if ( !connectedToDatabase ) 
+            throw new IllegalStateException( "Not Connected to Database" );
+   
+         // specify query and execute it
+         resultSet = statement.executeQuery( query );
+   
+         // obtain meta data for ResultSet
+         metaData = resultSet.getMetaData();
+   
+         // determine number of rows in ResultSet
+         resultSet.last();                   // move to last row
+         numberOfRows = resultSet.getRow();  // get row number      
+         
+         // notify JTable that model has changed
+         // this 'fire' method is what updates the content pane
+         fireTableStructureChanged();
+      }
+      catch( SQLException sqlException) {
+         // send info to console
+         sqlException.printStackTrace();
 
-      // specify query and execute it
-      resultSet = statement.executeQuery( query );
-
-      // obtain meta data for ResultSet
-      metaData = resultSet.getMetaData();
-
-      // determine number of rows in ResultSet
-      resultSet.last();                   // move to last row
-      numberOfRows = resultSet.getRow();  // get row number      
-      
-      // notify JTable that model has changed
-      // this 'fire' method is what updates the content pane
-      fireTableStructureChanged();
+         // generate a popup in the client
+         JOptionPane.showMessageDialog( null, sqlException.getMessage(),
+            "Database Error", JOptionPane.ERROR_MESSAGE );
+      }
    } // end method setQuery
 
 
