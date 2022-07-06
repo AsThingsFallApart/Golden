@@ -1,4 +1,4 @@
-# project2clientuserscript.sql
+# clientuserscript.sql
 # The client user execution script for Project Two - CNT 4714 - Summer 2022
 # all commands assumed to be executed by the client user
 # the client user has only selection  privilege on the project2 database schema
