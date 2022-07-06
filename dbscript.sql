@@ -1,3 +1,4 @@
+# dbscript.sql
 # SQL commands to create and populate the MySQL database for Project Two
 # CNT 4714 - Summer 2022
 #
@@ -155,6 +156,7 @@ insert into racewinners values ('Tour de France', 2021, 'Tadej Pogacar', 3414, '
 insert into racewinners values ('Rund de Flandren', 2009, 'Stuart OGrady', 253, '6:17:29');
 insert into racewinners values ('Liege-Bastogne-Liege', 1978, 'Dietrich Thurau', 256, '7:01:00');
 insert into racewinners values ('Liege-Bastogne-Liege', 1972, 'Eddy Merckx', 273, '7:11:47');
+
 
 
 
