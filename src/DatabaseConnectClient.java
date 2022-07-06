@@ -78,7 +78,6 @@ public class DatabaseConnectClient extends JFrame {
   private Connection loggerDatabaseLink;
   private Statement statement;
 
-  // TODO: handle logging
   // TODO: handle non-query commands
 
   /* CONSTRUCTOR */
@@ -479,13 +478,13 @@ public class DatabaseConnectClient extends JFrame {
                 JOptionPane.showMessageDialog(null, sqlException.getMessage(),
                   "Database error", JOptionPane.ERROR_MESSAGE);
               }
-
-
               break;
 
             case "UPDATE":
               try {
-                tableModel.setUpdate( queryArea.getText() );
+                statement = userDatabaseLink.createStatement();
+
+                statement.executeUpdate( queryArea.getText() );
 
                 // if code is here, update is successful.
                 // log successful update.
@@ -511,13 +510,34 @@ public class DatabaseConnectClient extends JFrame {
                 JOptionPane.showMessageDialog(null, sqlException.getMessage(),
                   "Database error", JOptionPane.ERROR_MESSAGE);        
               }
-
               break;
 
             case "INSERT":
+              try {
+                statement = userDatabaseLink.createStatement();
+
+                statement.executeUpdate( queryArea.getText() );
+              }
+              catch( SQLException sqlException ) {
+                sqlException.printStackTrace();
+
+                JOptionPane.showMessageDialog(null, sqlException.getMessage(),
+                  "Database error", JOptionPane.ERROR_MESSAGE);        
+              }
               break;
 
             case "DELETE":
+              try {
+                statement = userDatabaseLink.createStatement();
+
+                statement.executeUpdate( queryArea.getText() );
+              }
+              catch( SQLException sqlException ) {
+                sqlException.printStackTrace();
+
+                JOptionPane.showMessageDialog(null, sqlException.getMessage(),
+                  "Database error", JOptionPane.ERROR_MESSAGE);        
+              }
               break;
           }
 
