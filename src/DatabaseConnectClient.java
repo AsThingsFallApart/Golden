@@ -44,7 +44,6 @@ import java.sql.Connection;
 import java.util.Properties;
 import java.util.Vector;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 
 // classTags: [FRONT END] [DRIVER] [CLIENT-SERVER]
@@ -69,6 +68,8 @@ public class DatabaseConnectClient extends JFrame {
   private String databaseUser = null;
   private String databasePass = null;
   private boolean connectedToDatabase = false;
+  private int numQueries;
+  private int numUpdates;
 
   private MysqlDataSource dataSource;
   private Properties properties;
@@ -92,7 +93,7 @@ public class DatabaseConnectClient extends JFrame {
     super("SQL Client App Version 1 - (GDF - CNT 4714 - Summer 2022 - Project 2)");
     
     // set dimensions of JFrame
-    setSize( 2000, 1000 );
+    setSize( 1900, 1000 );
 
     /*
      * HANDLE LOGGING
@@ -147,10 +148,10 @@ public class DatabaseConnectClient extends JFrame {
 
     }
     catch( FileNotFoundException fileNotFound ) {
+      fileNotFound.printStackTrace();
+
       JOptionPane.showMessageDialog( null, "Logger properties file missing",
         "Logging disabled", JOptionPane.ERROR_MESSAGE );
-
-      fileNotFound.printStackTrace();
     }
     catch( IOException ioException ) {
       ioException.printStackTrace();
@@ -401,67 +402,125 @@ public class DatabaseConnectClient extends JFrame {
         // is defined as passing a query to the ResultSetTableModel.
         public void actionPerformed( ActionEvent buttonPressed ) {
 
-          System.out.println("connctedToDatabase: " + connectedToDatabase );
-
           if( !connectedToDatabase ) {
             JOptionPane.showMessageDialog( null, "Not Connected to Database",
               "Database error", JOptionPane.ERROR_MESSAGE);
             throw new IllegalStateException( "Not Connected to Database" );
           }
 
-          /* INSTANTIATE A 'JTable' OBJECT */
-          try {
-            System.out.println( "executeValidity:" + userDatabaseLink.isValid(1) );
+          /*
+           * BUSINESS LOGIC FOR LOGGING
+           *  1. Determine SQL command type
+           *  2. Increment numQueries or numUpdates
+           *  3. Initialize a Statement object using "loggerDatabaseLink.createStatement()"
+           *  4. Initialize String with SQL 'UPDATE' syntax and incremented logging value
+           *  5. Update logging database using "statement.executeUpdate()"
+           */
 
-            tableModel = new ResultSetTableModel( queryArea.getText(), userDatabaseLink );
-            queryResultTable = new JTable( tableModel );
-            queryResultTable.setGridColor( Color.BLACK );
+          // isolate first word in SQL command.
+          int i = queryArea.getText().indexOf(' ');
+          String SQLCommandType = (queryArea.getText().substring(0, i)).toUpperCase();
 
-            tableScroller.setViewportView( queryResultTable );
+          System.out.println("SQL Command Type: " + SQLCommandType);
+
+          switch(SQLCommandType) {
+            case "SELECT":
+              /* INSTANTIATE A 'JTable' OBJECT */
+              try {
+                System.out.println( "executeValidity:" + userDatabaseLink.isValid(1) );
+
+                tableModel = new ResultSetTableModel( queryArea.getText(), userDatabaseLink );
+                queryResultTable = new JTable( tableModel );
+                queryResultTable.setGridColor( Color.BLACK );
+
+                tableScroller.setViewportView( queryResultTable );
+              }
+              catch( ClassNotFoundException classNotFound) {
+                JOptionPane.showMessageDialog( null, "MySQL driver not found",
+                  "Driver not found", JOptionPane.ERROR_MESSAGE);
+
+                // terminate application
+                System.exit( 1 );
+              }
+              catch ( SQLException sqlException ) {
+                JOptionPane.showMessageDialog( null, sqlException.getMessage(),
+                  "Database error", JOptionPane.ERROR_MESSAGE);
+
+                // ensure database connection is closed
+                tableModel.disconnectFromDatabase();
+
+                // terminate application
+                System.exit( 1 );
+              }
+
+              // try to execute the user's query
+              try {
+                tableModel.setQuery( queryArea.getText() );
+
+                // if code gets to here, query was successful.
+                // log successful query.
+                try {
+                  statement = loggerDatabaseLink.createStatement();
+  
+                  numQueries++;
+  
+                  String incrementNumQueries = "UPDATE operationscount set num_queries=" + numQueries;
+  
+                  statement.executeUpdate( incrementNumQueries );
+                }
+                catch( SQLException sqlException ){
+                  sqlException.printStackTrace();
+  
+                  JOptionPane.showMessageDialog(null, sqlException.getMessage(),
+                    "Database error", JOptionPane.ERROR_MESSAGE);                
+                }
+              }
+              catch( SQLException sqlException ) {
+                JOptionPane.showMessageDialog(null, sqlException.getMessage(),
+                  "Database error", JOptionPane.ERROR_MESSAGE);
+              }
+
+
+              break;
+
+            case "UPDATE":
+              try {
+                tableModel.setUpdate( queryArea.getText() );
+
+                // if code is here, update is successful.
+                // log successful update.
+                try {
+                  statement = loggerDatabaseLink.createStatement();
+  
+                  numUpdates++;
+  
+                  String incrementNumUpdates = "UPDATE operationscount set num_updates=" + numUpdates;
+  
+                  statement.executeUpdate( incrementNumUpdates );
+                }
+                catch( SQLException sqlException ){
+                  sqlException.printStackTrace();
+  
+                  JOptionPane.showMessageDialog(null, sqlException.getMessage(),
+                    "Database error", JOptionPane.ERROR_MESSAGE);                
+                }
+              }
+              catch( SQLException sqlException ) {
+                sqlException.printStackTrace();
+
+                JOptionPane.showMessageDialog(null, sqlException.getMessage(),
+                  "Database error", JOptionPane.ERROR_MESSAGE);        
+              }
+
+              break;
+
+            case "INSERT":
+              break;
+
+            case "DELETE":
+              break;
           }
-          catch( ClassNotFoundException classNotFound) {
-            JOptionPane.showMessageDialog( null, "MySQL driver not found",
-              "Driver not found", JOptionPane.ERROR_MESSAGE);
 
-            // terminate application
-            System.exit( 1 );
-          }
-          catch ( SQLException sqlException ) {
-            JOptionPane.showMessageDialog( null, sqlException.getMessage(),
-              "Database error", JOptionPane.ERROR_MESSAGE);
-
-            // ensure database connection is closed
-            tableModel.disconnectFromDatabase();
-
-            // terminate application
-            System.exit( 1 );
-          }
-
-          // try to execute the user's query
-          try {
-            tableModel.setQuery( queryArea.getText() );
-          }
-          catch( SQLException sqlException ) {
-            JOptionPane.showMessageDialog(null, sqlException.getMessage(),
-              "Database error", JOptionPane.ERROR_MESSAGE);
-            
-            // // try to recover from invalid user query
-            // // by executing default query
-            // try {
-            //   tableModel.setQuery( DEFAULT_QUERY );
-            //   queryArea.setText( DEFAULT_QUERY );
-            // }
-            // catch( SQLException sqlException2 ) {
-            //   JOptionPane.showMessageDialog(null, sqlException2.getMessage(),
-            //   "Database error", JOptionPane.ERROR_MESSAGE);
-
-            //   // ensure database connection is closed
-            //   tableModel.disconnectFromDatabase();
-
-            //   // terminate application
-            //   System.exit( 1 );
-            // }
-          }
         }
       }
     );
