@@ -1,3 +1,4 @@
+# operationslog.sql
 # SQL commands to create and populate the operations log database for Project Two
 # CNT 4714 - Summer 2022
 #
