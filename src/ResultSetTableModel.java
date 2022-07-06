@@ -45,24 +45,34 @@ public class ResultSetTableModel extends AbstractTableModel
    private boolean connectedToDatabase = false;
    
    // constructor initializes resultSet and obtains its meta data object;
-   // determines number of rows
-   public ResultSetTableModel( Connection connect ) 
+   // determines number of rows.
+   // although this results in redundant computations,
+   // the construtor needs to initilize metaData since
+   // method '.getColumnCount()' uses the metaData object.
+   //    method '.setQuery' also computes the metaData (inefficient).
+   public ResultSetTableModel( String query, Connection connect ) 
       throws SQLException, ClassNotFoundException
    {         
 
-	   try {
+      try {
   	      // establish connection to database
          Connection connection = connect;
 
          // create Statement to query database
          statement = connection.createStatement( ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY );
 
+         // specify query and execute it
+         resultSet = statement.executeQuery( query );
+
+         // obtain meta data for ResultSet
+         metaData = resultSet.getMetaData();
+
          // update database connection status
          connectedToDatabase = true;
    
          //set update and execute it
          //setUpdate (query);
-	  } //end try
+	   } //end try
       catch ( SQLException sqlException ) 
       {
          sqlException.printStackTrace();
