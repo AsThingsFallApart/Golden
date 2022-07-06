@@ -20,6 +20,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingConstants;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
@@ -43,6 +44,7 @@ import java.sql.Connection;
 import java.util.Properties;
 import java.util.Vector;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 
 // classTags: [FRONT END] [DRIVER] [CLIENT-SERVER]
@@ -90,7 +92,7 @@ public class DatabaseConnectClient extends JFrame {
     super("SQL Client App Version 1 - (GDF - CNT 4714 - Summer 2022 - Project 2)");
     
     // set dimensions of JFrame
-    setSize( 2400, 1200 );
+    setSize( 2000, 1000 );
 
     /*
      * HANDLE LOGGING
@@ -198,9 +200,11 @@ public class DatabaseConnectClient extends JFrame {
     JButton clearSQLCommand = new JButton( "Clear SQL Command" );
     clearSQLCommand.setBackground( Color.WHITE );
     clearSQLCommand.setForeground( Color.RED );
+    // clearSQLCommand.setAlignmentX( CENTER_ALIGNMENT );
     
     JButton executeSQLCommand = new JButton( "Execute SQL Command" );
     executeSQLCommand.setBackground( limeGreen );
+    // executeSQLCommand.setAlignmentX( CENTER_ALIGNMENT );
     
     // Layout buttons left to right using a BoxLayout manager
     //  buttonBox organizes its components from left to right ("LINE_AXIS").
@@ -209,7 +213,9 @@ public class DatabaseConnectClient extends JFrame {
     // Components are organized in the order they are added:
     //  Adding 'clearSQLCommand' first ensures it is on the left.
     buttonBox.add( clearSQLCommand );
+    buttonBox.add( Box.createRigidArea( new Dimension( 50, 0 ) ) );
     buttonBox.add( executeSQLCommand );
+    // buttonBox.setAlignmentX( CENTER_ALIGNMENT );
 
     /* INSTANTIATE A 'JTextArea' OBJECT */
     //  the purpose of the JTextArea is to allow the user to pass MySQL queries to the client
@@ -226,8 +232,13 @@ public class DatabaseConnectClient extends JFrame {
     // 'true' paramater has lines wrap if they exceed JTextArea width
     // 'false' paramter has lines never wrap
     // queryArea.setLineWrap( true );
+    // queryArea.setAlignmentX( LEFT_ALIGNMENT );
 
     JLabel queryAreaLabel = new JLabel( "Enter An SQL Command" );
+    queryAreaLabel.setForeground( Color.BLUE );
+    // queryAreaLabel.setLabelFor( queryArea );
+    // queryAreaLabel.setPreferredSize( new Dimension( 50, 50 ) );
+    // queryAreaLabel.setAlignmentX( LEFT_ALIGNMENT );
 
     // align all SQL Command Area components in 'topRightBox'
     //  topRightBox componenets are aligned from top to bottom
@@ -251,6 +262,8 @@ public class DatabaseConnectClient extends JFrame {
       */
       
     JLabel connectionDetailsLabel = new JLabel( "Connection Details" );
+    connectionDetailsLabel.setForeground( Color.BLUE );
+    // connectionDetailsLabel.setAlignmentX( LEFT_ALIGNMENT );
     
     JTextPane propertiesFilePane = new JTextPane();
     propertiesFilePane.setText( "Properties File" );
@@ -296,8 +309,9 @@ public class DatabaseConnectClient extends JFrame {
     passwordBox.add( passwordField );
 
     JButton connectToDatabaseButton = new JButton( "Connect to Database" );
-    connectToDatabaseButton.setBackground(Color.BLUE);
-    connectToDatabaseButton.setForeground(Color.YELLOW);
+    connectToDatabaseButton.setBackground( Color.BLUE );
+    connectToDatabaseButton.setForeground( Color.YELLOW );
+    // connectToDatabaseButton.setAlignmentX( LEFT_ALIGNMENT );
 
     Box topLeftBox = new Box( BoxLayout.PAGE_AXIS );
     topLeftBox.add( connectionDetailsLabel );
@@ -342,6 +356,7 @@ public class DatabaseConnectClient extends JFrame {
     connectionStatusPane.setBackground( Color.BLACK );
     
     JLabel SQLExecutionResultLabel = new JLabel( "SQL Execution Result Window" );
+    SQLExecutionResultLabel.setForeground( Color.BLUE );
 
     // create a place-holder area to display in JScrollPane before user enters their first query
     JTextPane placeholder = new JTextPane();
@@ -361,6 +376,7 @@ public class DatabaseConnectClient extends JFrame {
     //   southBox organizes its content top to bottom
     Box southBox = new Box( BoxLayout.PAGE_AXIS );
     southBox.add( connectionStatusPane );
+    southBox.add( Box.createRigidArea( new Dimension(0, 30) ) );
     southBox.add( SQLExecutionResultLabel );
     southBox.add( tableScroller );
     southBox.add( clearResultButton );
@@ -614,11 +630,14 @@ public class DatabaseConnectClient extends JFrame {
     // ensure database connection is closed when user quits application
     //  implementation: in-line function
     addWindowListener( new WindowAdapter() {
+
       // disconnect from database and exit when window has closed
       public void windowClosed( WindowEvent event ) {
         tableModel.disconnectFromDatabase();
+
         System.exit( 0 );
       }
+
     });
 
   }
