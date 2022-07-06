@@ -232,34 +232,6 @@ public class ResultSetTableModel extends AbstractTableModel
       }
    } // end method setQuery
 
-
-// set new database update-query string
-   public void setUpdate( String update ) 
-      throws SQLException, IllegalStateException 
-   {
-	   int res;
-
-      // ensure database connection is available
-      if ( !connectedToDatabase ) 
-         throw new IllegalStateException( "Not Connected to Database" );
-
-      try {
-         // specify query and execute it
-         res = statement.executeUpdate( update );
-
-         // notify JTable that model has changed
-         fireTableStructureChanged();
-      }
-      catch( SQLException sqlException ) {
-         // print debug info to console
-         sqlException.printStackTrace();
-
-         // generate error popup in client
-         JOptionPane.showMessageDialog( null, sqlException.getMessage(),
-            "Database error", JOptionPane.ERROR_MESSAGE );
-      }
-   } // end method setUpdate
-
    // close Statement and Connection               
    public void disconnectFromDatabase()            
    {              
